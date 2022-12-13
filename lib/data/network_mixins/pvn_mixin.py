@@ -1,5 +1,3 @@
-import copy
-
 import numpy as np
 import os
 import pickle
@@ -12,7 +10,7 @@ from lib.data.utils import get_crop_index, crop_image, get_bbox_from_mask, pcld_
 from lib.data.augmenter import augment_rgb, augment_depth, rotate_datapoint, add_background_depth
 
 
-class PvnMixin:
+class PvnMixin():
     def __init__(self, use_pvn_kp, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.use_pvn_kp = use_pvn_kp
@@ -29,10 +27,12 @@ class PvnMixin:
                 return None
 
             return data['rgb'], data['pcld_xyz'], data['pcld_feats'], data['sampled_index'], data['labels'], \
-                   data['kpts_targ_offst'], data['ctr_targ_offst'], data['mask_label'], data['crop_factor']
+                    data['kpts_targ_offst'], data['ctr_targ_offst'], data['mask_label'], data['crop_factor']
+
+            
 
     def get_dict(self, index):
-        # dpt, rgb_normalized, mask, Rt, xy_ofst, bbox, crop_index, crop_factor, uncropped = self.read_pvn_data(index)
+        #dpt, rgb_normalized, mask, Rt, xy_ofst, bbox, crop_index, crop_factor, uncropped = self.read_pvn_data(index)
         rgb = self.get_rgb(index)
         mask = self.get_mask(index)
         dpt = self.get_depth(index)
@@ -46,21 +46,20 @@ class PvnMixin:
 
             obj_pos = Rt_list[0][0][:3, 3]
 
-            # if self.data_config.background_dir:
+            #if self.data_config.background_dir:
             #    bg_dir = self.data_config.background_dir
             #    with Image.open(os.path.join(bg_dir, np.random.choice(os.listdir(bg_dir)))) as random_rgb:
             #        random_rgb = np.array(random_rgb).astype(np.float)/255.
-            # else:
+            #else:
             random_rgb = None
-
-            depth_tensor = add_background_depth(depth_tensor, obj_pos=obj_pos,
-                                                camera_matrix=self.data_config.intrinsic_matrix, rgb2noise=random_rgb)
+            
+            depth_tensor = add_background_depth(depth_tensor, obj_pos=obj_pos, 
+                            camera_matrix = self.data_config.intrinsic_matrix,rgb2noise=random_rgb)
             depth_tensor = augment_depth(depth_tensor)
-
             dpt = tf.squeeze(depth_tensor).numpy()
             rgb, mask, dpt, Rt_list = rotate_datapoint(img_likes=[rgb, mask, dpt], Rt=Rt_list)
             Rt = Rt_list[0][0]
-
+        
         # Get bbox from rotated mask!
         bbox = get_bbox_from_mask(mask, gt_mask_value=255)
 
@@ -75,13 +74,7 @@ class PvnMixin:
         crop_index, crop_factor = get_crop_index(bbox, rgb_size=rgb.shape, base_crop_resolution=(w, h))
 
         x1, y1, x2, y2 = crop_index
-        xy_ofst = (x1, y1)
-
-        rgb_normalized = rgb / 255.
-
-        if self.if_augment:
-            rgb_normalized = augment_rgb(rgb_normalized)
-            rgb = (rgb_normalized * 255).astype(np.uint8)
+        xy_ofst =(x1, y1)
 
         # crop after augmenting depth -> never change the scale
         if self.crop_image:
@@ -89,28 +82,29 @@ class PvnMixin:
             mask = crop_image(mask, crop_index)
             dpt = crop_image(dpt, crop_index)
 
-        rgb = tf.image.resize(rgb, self.data_config.rgb_input_shape[:2]).numpy()  # resize un-normalized rgb to resnet shape
+        rgb_normalized = rgb / 255.
+        if self.if_augment:
+            rgb_normalized = augment_rgb(rgb_normalized)
+            rgb = (rgb_normalized*255).astype(np.uint8)
 
-        pcld_xyz, pcld_feats, sampled_index = pcld_processor_tf(dpt.astype(np.float32),
-                                                                rgb_normalized.astype(np.float32),
-                                                                self.data_config.intrinsic_matrix.astype(np.float32), 1,
-                                                                12288,
-                                                                xy_ofst=xy_ofst)  # fixed n_sample points here -> gets sampled online
+        rgb = tf.image.resize(rgb, self.data_config.rgb_input_shape[:2]).numpy() # resize un-normalized rgb to resnet shape
+
+        pcld_xyz, pcld_feats, sampled_index = pcld_processor_tf(dpt.astype(np.float32), rgb_normalized.astype(np.float32), 
+            self.data_config.intrinsic_matrix.astype(np.float32), 1, 12288, xy_ofst=xy_ofst) # fixed n_sample points here -> gets sampled online
 
         if pcld_xyz.shape == (1,):
             return None
 
-        label_list, mask_selected, mask_valid = self.get_label_list(self.cls_type, mask, sampled_index,
-                                                                    gt_mask_value=255)
+        label_list, mask_selected, mask_valid = self.get_label_list(self.cls_type, mask, sampled_index, gt_mask_value=255)
 
         if not mask_valid:
             return None
 
         mask_label = (mask_selected == 255).astype('uint8')
         center, kpts = self.get_ct_kpts()
-        ctr_targ_offst, kpts_targ_offst = get_offst([Rt], pcld_xyz, mask_selected, self.data_config.n_objects,
-                                                    self.cls_type,
+        ctr_targ_offst, kpts_targ_offst = get_offst([Rt], pcld_xyz, mask_selected, self.data_config.n_objects, self.cls_type,
                                                     center, kpts)
+
 
         meta_data = {}
         meta_data['rgb'] = rgb.astype(np.uint8)
@@ -154,6 +148,7 @@ class PvnMixin:
         else:
             return self._centers_list, self._keypoints_list
 
+
     def get_data_preprocessed(self, mode, index):
         get_data = lambda name: np.load(os.path.join(self.data_config.preprocessed_folder, name, f"{index:06}.npy"))
 
@@ -181,6 +176,7 @@ class PvnMixin:
                 return rgb, pcld_xyz, pcld_feats, sampled_index, crop_down_factor
         else:
 
+
             label_list = get_data("labels")
             mask_label = get_data("mask_label")
             sampled_index = get_data("sampled_index")
@@ -199,6 +195,7 @@ class PvnMixin:
             else:
                 return rgb, pcld_xyz, pcld_feats, sampled_index, label_list, \
                        kpts_targ_offst, ctr_targ_offst, mask_label, crop_down_factor
+
 
     def get_label_list(self, cls_type, mask, sampled_index, gt_mask_value=255):
         """

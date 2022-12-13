@@ -412,7 +412,6 @@ def get_bbox_from_mask(mask, gt_mask_value=255):
 
     return (x1, y1, x2, y2)
 
-
 def get_bbox(p3d, cam_scale, K, rgb_shape=(480, 640)):
     """ calculate bbox [x1, y1, x2, y2] from projecting points onto image """
     h, w = rgb_shape
@@ -527,6 +526,8 @@ def get_data_preprocessed_linemod(preprocessed_data_path):
     cam_intrinsic = preprocessed_data['K']
     # crop_index, crop_down_factor = crop_info
     return rt, rgb, depth, cam_intrinsic
+
+
 
 
 def get_data_preprocessed_generic(path, index, names):

@@ -6,15 +6,14 @@ from lib.data.dataset import Dataset
 import cv2
 import json
 from scipy.spatial.transform import Rotation as R
-from lib.data.utils import get_bbox_from_mask
+from lib.data.utils import  get_bbox_from_mask
 
 
 class Blender(Dataset):
     def __init__(self, mode, data_name, cls_type, use_preprocessed, size_all, train_size,
                  crop_image=False, shuffle=True, augment_per_image=0, *args, **kwargs):
 
-        data_config = BlenderSettings(data_name, cls_type, use_preprocessed, crop_image, size_all, train_size,
-                                      augment_per_image=augment_per_image)
+        data_config = BlenderSettings(data_name, cls_type, use_preprocessed, crop_image, size_all, train_size, augment_per_image=augment_per_image)
 
         super().__init__(data_config, mode, data_name, cls_type, crop_image, shuffle=shuffle, *args, **kwargs)
 
@@ -36,6 +35,7 @@ class Blender(Dataset):
         rgb_path = os.path.join(cls_root, "rgb")
         return len(os.listdir(rgb_path))
 
+
     def get_rgb(self, index):
         cls_root = self.get_cls_root(index)
         rgb_path = os.path.join(cls_root, "rgb", f"rgb_{index:04}.png")
@@ -44,9 +44,9 @@ class Blender(Dataset):
             with Image.open(rgb_path) as rgb:
                 rgb = np.array(rgb).astype(np.uint8)
         except OSError:
-            print("\nCOULD NOT OPEN IMAGE: ", rgb_path)
+            print("\nCOUD NOT OPEN IMAGE: ", rgb_path)
             rgb = None
-
+            
         return rgb
 
     def get_mask(self, index):
@@ -62,6 +62,7 @@ class Blender(Dataset):
             mask[mask == mask_id] = 255
 
         return mask.astype(np.uint8)
+    
 
     def get_depth(self, index):
         depth_path = os.path.join(self.get_cls_root(index), "depth", f"depth_{index:04}.exr")
@@ -101,7 +102,7 @@ class Blender(Dataset):
                 Rt[:3, 3] = cam_rot.as_matrix().T @ (pos - cam_pos)
                 Rt = Rt[:3, :]  # -> (3, 4)
                 RT_list.append((Rt, cls_id))
-
+    
         else:
             for obj in objs:  # here we only consider the single obj
                 if (obj['name'] == self.cls_type):
@@ -116,7 +117,7 @@ class Blender(Dataset):
                     Rt = Rt[:3, :]  # -> (3, 4)
                     RT_list.append((Rt, cls_id))
         return RT_list
-
+    
     def get_gt_bbox(self, index) -> np.ndarray:
         bboxes = []
         mask = self.get_mask(index)

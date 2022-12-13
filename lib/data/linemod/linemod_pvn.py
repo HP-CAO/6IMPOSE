@@ -1,4 +1,5 @@
 from lib.data.network_mixins.pvn_mixin import PvnMixin
+from lib.utils import CachedProperty
 from lib.data.linemod.linemod import LineMod
 
 

@@ -1,6 +1,6 @@
 # Sim2real 6D pose estimation using YOLO and PVN3D
 ## Overview
-In this project, we develop a real-time two-stage 6D pose estimation approach by integrating the object detector YOLO-V4-tiny [[1]](#1) and the 6D pose estimation algorithm PVN3D [[2]](#2) for time sensitive robotics applications.
+In this work, we develop a real-time two-stage 6D pose estimation approach by integrating the object detector YOLO-V4-tiny [[1]](#1) and the 6D pose estimation algorithm PVN3D [[2]](#2) for time sensitive robotics applications.
 
 ![Alt text](diagram.jpg?raw=true "")
 

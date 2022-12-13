@@ -81,7 +81,6 @@ class LineModSettings(DatasetSettings):
         self.test_txt_path = os.path.join(self.data_root, "{:02}/test.txt".format(self.obj_dict[self.cls_type]))
 
         # ================= yolo_configs ======================
-        # we don't resize
-        self.yolo_default_rgb_h = 480
-        self.yolo_default_rgb_w = 640
-        self.yolo_rgb_shape = (480, 640, 3)
+        self.yolo_default_rgb_h = 416
+        self.yolo_default_rgb_w = 416
+        self.yolo_rgb_shape = (416, 416, 3)

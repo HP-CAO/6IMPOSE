@@ -11,16 +11,14 @@ from abc import abstractmethod
 class NoMaskError(Exception):
     pass
 
-
 class NoDepthError(Exception):
     pass
-
 
 class NoRtError(Exception):
     pass
 
 
-class Dataset:
+class Dataset():
     data_config: DatasetSettings
 
     def __init__(self, data_config: DatasetSettings, mode, data_name, cls_type,
@@ -48,29 +46,29 @@ class Dataset:
             self.data_config.use_preprocessed = False
 
     @abstractmethod
-    def get_rgb(self, index) -> np.ndarray:
+    def get_rgb(self, index)->np.ndarray:
         """ get image in rgb as ndarray"""
         pass
 
     @abstractmethod
-    def get_gt_bbox(self, index) -> np.ndarray:
+    def get_gt_bbox(self, index)->np.ndarray:
         """ get bbox for cls for index """
         pass
-
+        
     @abstractmethod
-    def get_depth(self, index) -> np.ndarray:
+    def get_depth(self, index)->np.ndarray:
         """ get depth image in rgb as ndarray, scaled to m"""
         pass
 
     @abstractmethod
-    def get_mask(self, index) -> np.ndarray:
+    def get_mask(self, index)->np.ndarray:
         """ get mask. If cls_type != 'all' return mask for cls_type with {0, 255}
                       If cls_type == 'all' return mask with mask_ids
         """
         pass
-
+    
     @abstractmethod
-    def get_num_imgs(self) -> int:
+    def get_num_imgs(self)->int:
         """ get number of raw images """
         pass
 
@@ -78,7 +76,7 @@ class Dataset:
     def get_RT_list(self, index):
         """ get list of Rt (tuples of RT matrix and cls_id)"""
         pass
-
+    
     @abstractmethod
     def get(self, index):
         """ get training data as tuple """
@@ -89,15 +87,17 @@ class Dataset:
         """ get dict with network relevant info"""
         pass
 
+
     def get_item(self):
         """ retrieve item for iterator"""
         index = self.index_lst[self.counter]
 
-        # if not self.data_config.use_preprocessed and self.if_augment:
-        # translate augmented index into original image index
-        # index = index // self.data_config.augment_per_image
-
+        #if not self.data_config.use_preprocessed and self.if_augment:
+            # translate augmented index into original image index
+            #index = index // self.data_config.augment_per_image
+            
         return self.get(index)
+
 
     @CachedProperty
     def index_lst(self):
@@ -107,7 +107,7 @@ class Dataset:
             elif self.mode == 'val':
                 index_lst = range(self.data_config.train_size, self.data_config.size_all)
             elif self.mode == 'preprocess':
-                index_lst = range(0, self.data_config.size_all)
+                index_lst = range(0, self.data_config.size_all)   
         else:
             # read n_datapoints from preprocessed data
             if self.mode == 'train':
@@ -120,6 +120,7 @@ class Dataset:
                 index_lst = range(0, n_datapoints)
             elif self.mode == 'preprocess':
                 raise AssertionError('Reading a preprocessed dataset to preprocess a dataset does not make sense.')
+
 
         if self.shuffle:
             index_lst = random.sample(index_lst, len(index_lst))

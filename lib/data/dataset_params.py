@@ -34,6 +34,7 @@ class YoloDatasetParams(DatasetParams):
 
 
 def normal_tensor_spec_test():
+
     tensor_spec = (
         tf.TensorSpec(shape=(480, 640, 3), dtype=tf.float32, name='rgb'),
         tf.TensorSpec(shape=(480, 640), dtype=tf.float32, name='depth'),
@@ -42,6 +43,7 @@ def normal_tensor_spec_test():
 
 
 def pvn3d_tensor_spec(cls_type, rgb_input_shape, n_points, mode="test", use_pvn_kp=False):
+
     label_shape = (n_points, 10) if cls_type == 'all' else (n_points, 2)
 
     if mode == "test":
@@ -78,44 +80,16 @@ def pvn3d_tensor_spec(cls_type, rgb_input_shape, n_points, mode="test", use_pvn_
     return tensor_spec_tuple
 
 
-#
-# def yolo_tensor_spec(num_cls, yolo_rgb_shape, rgb_shape=None, mode="test"):
-#
-#     if mode == "test":
-#         tensor_spec = (
-#             tf.TensorSpec(shape=rgb_shape, dtype=tf.float32, name='rgb_input')
-#         )
-#
-#     else:
-#         tensor_spec = (
-#             tf.TensorSpec(shape=yolo_rgb_shape, dtype=tf.uint8, name='yolo_rgb_input'),
-#             tf.TensorSpec(shape=(26, 26, 3, 5 + num_cls), dtype=tf.float32, name='label_sbbox'),
-#             tf.TensorSpec(shape=(13, 13, 3, 5 + num_cls), dtype=tf.float32, name='label_mbbox'),
-#             tf.TensorSpec(shape=(6, 6, 3, 5 + num_cls), dtype=tf.float32, name='label_lbbox'),
-#             tf.TensorSpec(shape=(100, 4), dtype=tf.float32, name='sbboxes'),
-#             tf.TensorSpec(shape=(100, 4), dtype=tf.float32, name='mbboxes'),
-#             tf.TensorSpec(shape=(100, 4), dtype=tf.float32, name='lbboxes')
-#         )
-#
-#     return tensor_spec
-
-
-def yolo_tensor_spec(num_cls, input_shape=(480, 640, 3), mode="test"):
-    h, w, _ = input_shape
+def yolo_tensor_spec(num_cls, yolo_rgb_shape, rgb_shape=None, mode="test"):
 
     if mode == "test":
         tensor_spec = (
-            tf.TensorSpec(shape=(h, w, 3), dtype=tf.uint8, name='yolo_rgb_input'),
-            tf.TensorSpec(shape=(h, w, 1), dtype=tf.float32, name='yolo_depth_input'),
-            tf.TensorSpec(shape=(h, w, 3), dtype=tf.float32, name='normals'),
-
+            tf.TensorSpec(shape=rgb_shape, dtype=tf.float32, name='rgb_input')
         )
 
     else:
         tensor_spec = (
-            tf.TensorSpec(shape=(h, w, 3), dtype=tf.uint8, name='yolo_rgb_input'),
-            tf.TensorSpec(shape=(h, w, 1), dtype=tf.float32, name='yolo_depth_input'),
-            tf.TensorSpec(shape=(h, w, 3), dtype=tf.float32, name='normals'),
+            tf.TensorSpec(shape=yolo_rgb_shape, dtype=tf.uint8, name='yolo_rgb_input'),
             tf.TensorSpec(shape=(26, 26, 3, 5 + num_cls), dtype=tf.float32, name='label_sbbox'),
             tf.TensorSpec(shape=(13, 13, 3, 5 + num_cls), dtype=tf.float32, name='label_mbbox'),
             tf.TensorSpec(shape=(6, 6, 3, 5 + num_cls), dtype=tf.float32, name='label_lbbox'),

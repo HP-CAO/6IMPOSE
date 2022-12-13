@@ -1,13 +1,13 @@
 import os
 import numpy as np
-import tensorflow as tf
-from lib.data.augmenter import augment_rgb, rotate_datapoint, random_crop, add_background_depth, augment_depth
+from lib.data.augmenter import augment_rgb, rotate_datapoint, random_crop
 from lib.data.dataset import NoMaskError
-from lib.data.utils import rescale_image_bbox, validate_bbox, get_bbox_from_mask, compute_normals
+from lib.data.utils import rescale_image_bbox, validate_bbox, get_bbox_from_mask
 from lib.net.utils import bbox_iou
 
 
-class YoloMixin:
+
+class YoloMixin():
     def __init__(self, strides, anchors, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -23,131 +23,81 @@ class YoloMixin:
         self.downsample_factor = 1
         self.num_classes = self.data_config.n_classes
 
+
     def get(self, index):
         if self.data_config.use_preprocessed:
             get_data = lambda name: np.load(os.path.join(self.data_config.preprocessed_folder, name, f"{index:06}.npy"))
+            rgb_rescaled = get_data('yolo_rgb_input')
+            real_bbox = get_data('gt_bboxes')
+            return rgb_rescaled, real_bbox
 
-            yolo_rgb_input = get_data('yolo_rgb_input')
-            yolo_depth_input = get_data('yolo_depth_input')
-            normals = get_data('normals')
-
-            if self.mode == 'test':
-                return yolo_rgb_input, yolo_depth_input, normals
-            else:
-                label_sbbox = get_data('label_sbbox')
-                label_mbbox = get_data('label_mbbox')
-                label_lbbox = get_data('label_lbbox')
-                sbboxes = get_data('sbboxes')
-                mbboxes = get_data('mbboxes')
-                lbboxes = get_data('lbboxes')
-                return yolo_rgb_input, yolo_depth_input, normals, label_sbbox, \
-                       label_mbbox, label_lbbox, sbboxes, mbboxes, lbboxes
         else:
-            # todo to complete this function
             data = self.get_dict(index)
             rgb_rescaled = data['yolo_rgb_input']
             gt_bboxes = data['gt_bboxes']
             return rgb_rescaled, gt_bboxes
 
+    
     def get_dict(self, index):
+            rgb = self.get_rgb(index)
 
-        depth = self.get_depth(index)
-        rgb = self.get_rgb(index)
-        mask = self.get_mask(index)
+            if self.if_augment:
+                rgb = augment_rgb(rgb.astype(np.float32)/255.) * 255
 
-        Rt_list = self.get_RT_list(index)
+            try:
+                mask = self.get_mask(index)
+                if self.data_config.augment_per_image>1:
+                    rgb, mask = rotate_datapoint(img_likes=[rgb, mask])
+                
+                # we use mask for bbox to get exact bbox for all rotations
+                bboxes = []
+                if self.cls_type == 'all':
+                    for cls, gt_mask_value in self.data_config.mask_ids.items():
+                        bbox = get_bbox_from_mask(mask, gt_mask_value)
+                        if bbox is None:
+                            continue
+                        bbox = list(bbox)
+                        bbox.append(self.data_config.obj_dict[cls])
+                        bboxes.append(bbox)
+                else:
+                    bbox = get_bbox_from_mask(mask, gt_mask_value=255)
+                    if bbox is not None:
+                        bbox = list(bbox)
+                        bbox.append(0)
+                        bboxes.append(bbox)
 
-        if self.if_augment:
-            depth_tensor = tf.expand_dims(depth, 0)  # add batch
-            depth_tensor = tf.expand_dims(depth_tensor, -1)  # channel
-            obj_pos = Rt_list[0][0][:3, 3]
+            except NoMaskError:
+                bboxes = self.get_gt_bbox(index)
 
-            random_rgb = None
 
-            depth_tensor = add_background_depth(depth_tensor, obj_pos=obj_pos,
-                                                camera_matrix=self.data_config.intrinsic_matrix, rgb2noise=random_rgb)
-            depth_tensor = augment_depth(depth_tensor)
-            depth = tf.squeeze(depth_tensor).numpy()
-            rgb, mask, depth, Rt_list = rotate_datapoint(img_likes=[rgb, mask, depth], Rt=Rt_list)
-            rgb = augment_rgb(rgb.astype(np.float32) / 255.) * 255
+            # filter too small bboxes
+            bboxes = [bbox for bbox in bboxes if validate_bbox(bbox)]
+            bboxes = np.array(bboxes)
 
-        # bbox = get_bbox_from_mask(mask, gt_mask_value=255)
-        normals = compute_normals(depth, self.data_config.intrinsic_matrix.astype(np.float32))
+            if self.if_augment:
+                if len(bboxes)>0:
+                    rgb, bboxes = random_crop(rgb, bboxes)
 
-        try:
-            bboxes = []
-            if self.cls_type == 'all':
-                for cls, gt_mask_value in self.data_config.mask_ids.items():
-                    bbox = get_bbox_from_mask(mask, gt_mask_value)
-                    if bbox is None:
-                        continue
-                    bbox = list(bbox)
-                    bbox.append(self.data_config.obj_dict[cls])
-                    bboxes.append(bbox)
-            else:
-                bbox = get_bbox_from_mask(mask, gt_mask_value=255)
-                if bbox is not None:
-                    bbox = list(bbox)
-                    bbox.append(0)
-                    bboxes.append(bbox)
-        except NoMaskError:
-            bboxes = self.get_gt_bbox(index)
+            yolo_default_rgb_h = self.data_config.yolo_default_rgb_h
+            yolo_default_rgb_w = self.data_config.yolo_default_rgb_w
 
-        # try:
-        #     mask = self.get_mask(index)
-        #     if self.data_config.augment_per_image > 1:
-        #         rgb, mask = rotate_datapoint(img_likes=[rgb, mask])
-        #
-        #     # we use mask for bbox to get exact bbox for all rotations
-        #     bboxes = []
-        #     if self.cls_type == 'all':
-        #         for cls, gt_mask_value in self.data_config.mask_ids.items():
-        #             bbox = get_bbox_from_mask(mask, gt_mask_value)
-        #             if bbox is None:
-        #                 continue
-        #             bbox = list(bbox)
-        #             bbox.append(self.data_config.obj_dict[cls])
-        #             bboxes.append(bbox)
-        #     else:
-        #         bbox = get_bbox_from_mask(mask, gt_mask_value=255)
-        #         if bbox is not None:
-        #             bbox = list(bbox)
-        #             bbox.append(0)
-        #             bboxes.append(bbox)
-        #
-        # except NoMaskError:
-        #     bboxes = self.get_gt_bbox(index)
+            rgb_rescaled, gt_bboxes \
+                = rescale_image_bbox(image=rgb, target_size=[yolo_default_rgb_h, yolo_default_rgb_w], gt_boxes=bboxes)
 
-        # filter too small bboxes
-        bboxes = [bbox for bbox in bboxes if validate_bbox(bbox)]
-        bboxes = np.array(bboxes)
+            #label_sbbox, label_mbbox, label_lbbox, sbboxes, mbboxes, lbboxes = self.preprocess_true_boxes(gt_bboxes)
 
-        # if self.if_augment:
-        #     if len(bboxes) > 0:
-        #         rgb, bboxes = random_crop(rgb, bboxes)
-        #
-        # yolo_default_rgb_h = self.data_config.yolo_default_rgb_h
-        # yolo_default_rgb_w = self.data_config.yolo_default_rgb_w
+            data = {}
+            data['yolo_rgb_input'] = rgb_rescaled.astype(np.uint8)
+            #data['label_sbbox'] = label_sbbox.astype(np.float32)
+            #data['label_mbbox'] = label_mbbox.astype(np.float32)
+            #data['label_lbbox'] = label_lbbox.astype(np.float32)
+            #data['sbboxes'] = sbboxes.astype(np.float32)
+            #data['mbboxes'] = mbboxes.astype(np.float32)
+            #data['lbboxes'] = lbboxes.astype(np.float32)
+            data['gt_bboxes'] = gt_bboxes.astype(np.float32)
+            
+            return data
 
-        # rgb_rescaled, gt_bboxes \
-        #     = rescale_image_bbox(image=rgb, target_size=[yolo_default_rgb_h, yolo_default_rgb_w], gt_boxes=bboxes)
-        label_sbbox, label_mbbox, label_lbbox, sbboxes, mbboxes, lbboxes = self.preprocess_true_boxes(bboxes)
-
-        data = {
-            'yolo_rgb_input': rgb.astype(np.uint8),
-            'yolo_depth_input': depth.astype(np.float32),
-            'mask': mask.astype(np.uint8),
-            'normals': np.array(normals, dtype=np.float32),
-            'label_sbbox': label_sbbox.astype(np.float32),
-            'label_mbbox': label_mbbox.astype(np.float32),
-            'label_lbbox': label_lbbox.astype(np.float32),
-            'sbboxes': sbboxes.astype(np.float32),
-            'mbboxes': mbboxes.astype(np.float32),
-            'lbboxes': lbboxes.astype(np.float32),
-            'gt_bboxes': bboxes.astype(np.float32)
-        }
-
-        return data
 
     def preprocess_true_boxes(self, bboxes):
         label = [np.zeros((self.train_output_h[i], self.train_output_w[i], self.anchor_per_scale,
@@ -220,3 +170,4 @@ class YoloMixin:
         sbboxes, mbboxes, lbboxes = bboxes_xywh
 
         return label_sbbox, label_mbbox, label_lbbox, sbboxes, mbboxes, lbboxes
+

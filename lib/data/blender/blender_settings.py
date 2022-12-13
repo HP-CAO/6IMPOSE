@@ -106,10 +106,6 @@ class BlenderSettings(DatasetSettings):
                                                 "{:02}/preprocessed".format(self.obj_dict[self.cls_type]))
 
         # ================= yolo_configs ======================
-        # self.yolo_default_rgb_h = 416
-        # self.yolo_default_rgb_w = 416
-        # self.yolo_rgb_shape = (416, 416, 3)
-
-        self.yolo_default_rgb_h = 480
-        self.yolo_default_rgb_w = 640
-        self.yolo_rgb_shape = (480, 640, 3)
+        self.yolo_default_rgb_h = 416
+        self.yolo_default_rgb_w = 416
+        self.yolo_rgb_shape = (416, 416, 3)

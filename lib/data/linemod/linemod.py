@@ -63,7 +63,7 @@ class LineMod(Dataset):
 
     def get_depth(self, index):
         with Image.open(os.path.join(self.cls_root, "depth", f"{index:04}.png")) as depth:
-            dpt = np.array(depth).astype(np.float32)
+            dpt = np.array(depth)
             return dpt / self.data_config.camera_scale
 
     def get_mask(self, index):

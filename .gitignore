@@ -8,7 +8,7 @@ build
 /logs
 /models
 /.idea
-/pvn3d/logs
+/lib/logs
 *.pth
 /demo_result
 *.zip
@@ -21,7 +21,7 @@ build
 *.cu
 *.cu.o
 *.so
-/pvn3d/lib/pointnet2_utils/tf_ops
+/lib/lib/pointnet2_utils/tf_ops
 /camera/test_image
 /camera/test_result
 *.npy

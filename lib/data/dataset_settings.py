@@ -3,7 +3,6 @@ import numpy as np
 import os
 from typing import Dict, Tuple, List
 
-
 class DatasetSettings(ABC):
     preprocessed_folder: str
     intrinsic_matrix: np.ndarray
@@ -15,7 +14,7 @@ class DatasetSettings(ABC):
     augment_per_image: int
     cls_root: str
     mesh_paths: Dict[str, str]
-    mesh_scale: float  # from mesh to m
+    mesh_scale: float # from mesh to m
     ori_rgb_shape: Tuple
     n_classes: int
     n_objects: int
@@ -25,7 +24,7 @@ class DatasetSettings(ABC):
         self.data_name = data_name.decode("utf-8") if isinstance(data_name, bytes) else data_name
         self.cls_type = cls_type.decode("utf-8") if isinstance(cls_type, bytes) else cls_type
         self.use_preprocessed = use_preprocessed
-
+        
         self.exp_dir = os.path.dirname(__file__)
 
         self.size_all = size_all
