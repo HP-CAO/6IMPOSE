@@ -1,0 +1,222 @@
+import os
+import numpy as np
+import tensorflow as tf
+from lib.data.augmenter import augment_rgb, rotate_datapoint, random_crop, add_background_depth, augment_depth
+from lib.data.dataset import NoMaskError
+from lib.data.utils import rescale_image_bbox, validate_bbox, get_bbox_from_mask, compute_normals
+from lib.net.utils import bbox_iou
+
+
+class YoloMixin:
+    def __init__(self, strides, anchors, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.anchor_per_scale = 3
+        self.max_bbox_per_scale = 100
+        self.strides = strides
+        self.anchors = anchors
+
+        if strides is not None:
+            self.train_output_h = self.data_config.yolo_default_rgb_h // self.strides
+            self.train_output_w = self.data_config.yolo_default_rgb_w // self.strides
+
+        self.downsample_factor = 1
+        self.num_classes = self.data_config.n_classes
+
+    def get(self, index):
+        if self.data_config.use_preprocessed:
+            get_data = lambda name: np.load(os.path.join(self.data_config.preprocessed_folder, name, f"{index:06}.npy"))
+
+            yolo_rgb_input = get_data('yolo_rgb_input')
+            yolo_depth_input = get_data('yolo_depth_input')
+            normals = get_data('normals')
+
+            if self.mode == 'test':
+                return yolo_rgb_input, yolo_depth_input, normals
+            else:
+                label_sbbox = get_data('label_sbbox')
+                label_mbbox = get_data('label_mbbox')
+                label_lbbox = get_data('label_lbbox')
+                sbboxes = get_data('sbboxes')
+                mbboxes = get_data('mbboxes')
+                lbboxes = get_data('lbboxes')
+                return yolo_rgb_input, yolo_depth_input, normals, label_sbbox, \
+                       label_mbbox, label_lbbox, sbboxes, mbboxes, lbboxes
+        else:
+            # todo to complete this function
+            data = self.get_dict(index)
+            rgb_rescaled = data['yolo_rgb_input']
+            gt_bboxes = data['gt_bboxes']
+            return rgb_rescaled, gt_bboxes
+
+    def get_dict(self, index):
+
+        depth = self.get_depth(index)
+        rgb = self.get_rgb(index)
+        mask = self.get_mask(index)
+
+        Rt_list = self.get_RT_list(index)
+
+        if self.if_augment:
+            depth_tensor = tf.expand_dims(depth, 0)  # add batch
+            depth_tensor = tf.expand_dims(depth_tensor, -1)  # channel
+            obj_pos = Rt_list[0][0][:3, 3]
+
+            random_rgb = None
+
+            depth_tensor = add_background_depth(depth_tensor, obj_pos=obj_pos,
+                                                camera_matrix=self.data_config.intrinsic_matrix, rgb2noise=random_rgb)
+            depth_tensor = augment_depth(depth_tensor)
+            depth = tf.squeeze(depth_tensor).numpy()
+            rgb, mask, depth, Rt_list = rotate_datapoint(img_likes=[rgb, mask, depth], Rt=Rt_list)
+            rgb = augment_rgb(rgb.astype(np.float32) / 255.) * 255
+
+        # bbox = get_bbox_from_mask(mask, gt_mask_value=255)
+        normals = compute_normals(depth, self.data_config.intrinsic_matrix.astype(np.float32))
+
+        try:
+            bboxes = []
+            if self.cls_type == 'all':
+                for cls, gt_mask_value in self.data_config.mask_ids.items():
+                    bbox = get_bbox_from_mask(mask, gt_mask_value)
+                    if bbox is None:
+                        continue
+                    bbox = list(bbox)
+                    bbox.append(self.data_config.obj_dict[cls])
+                    bboxes.append(bbox)
+            else:
+                bbox = get_bbox_from_mask(mask, gt_mask_value=255)
+                if bbox is not None:
+                    bbox = list(bbox)
+                    bbox.append(0)
+                    bboxes.append(bbox)
+        except NoMaskError:
+            bboxes = self.get_gt_bbox(index)
+
+        # try:
+        #     mask = self.get_mask(index)
+        #     if self.data_config.augment_per_image > 1:
+        #         rgb, mask = rotate_datapoint(img_likes=[rgb, mask])
+        #
+        #     # we use mask for bbox to get exact bbox for all rotations
+        #     bboxes = []
+        #     if self.cls_type == 'all':
+        #         for cls, gt_mask_value in self.data_config.mask_ids.items():
+        #             bbox = get_bbox_from_mask(mask, gt_mask_value)
+        #             if bbox is None:
+        #                 continue
+        #             bbox = list(bbox)
+        #             bbox.append(self.data_config.obj_dict[cls])
+        #             bboxes.append(bbox)
+        #     else:
+        #         bbox = get_bbox_from_mask(mask, gt_mask_value=255)
+        #         if bbox is not None:
+        #             bbox = list(bbox)
+        #             bbox.append(0)
+        #             bboxes.append(bbox)
+        #
+        # except NoMaskError:
+        #     bboxes = self.get_gt_bbox(index)
+
+        # filter too small bboxes
+        bboxes = [bbox for bbox in bboxes if validate_bbox(bbox)]
+        bboxes = np.array(bboxes)
+
+        # if self.if_augment:
+        #     if len(bboxes) > 0:
+        #         rgb, bboxes = random_crop(rgb, bboxes)
+        #
+        # yolo_default_rgb_h = self.data_config.yolo_default_rgb_h
+        # yolo_default_rgb_w = self.data_config.yolo_default_rgb_w
+
+        # rgb_rescaled, gt_bboxes \
+        #     = rescale_image_bbox(image=rgb, target_size=[yolo_default_rgb_h, yolo_default_rgb_w], gt_boxes=bboxes)
+        label_sbbox, label_mbbox, label_lbbox, sbboxes, mbboxes, lbboxes = self.preprocess_true_boxes(bboxes)
+
+        data = {
+            'yolo_rgb_input': rgb.astype(np.uint8),
+            'yolo_depth_input': depth.astype(np.float32),
+            'mask': mask.astype(np.uint8),
+            'normals': np.array(normals, dtype=np.float32),
+            'label_sbbox': label_sbbox.astype(np.float32),
+            'label_mbbox': label_mbbox.astype(np.float32),
+            'label_lbbox': label_lbbox.astype(np.float32),
+            'sbboxes': sbboxes.astype(np.float32),
+            'mbboxes': mbboxes.astype(np.float32),
+            'lbboxes': lbboxes.astype(np.float32),
+            'gt_bboxes': bboxes.astype(np.float32)
+        }
+
+        return data
+
+    def preprocess_true_boxes(self, bboxes):
+        label = [np.zeros((self.train_output_h[i], self.train_output_w[i], self.anchor_per_scale,
+                           5 + self.num_classes)) for i in range(3)]
+
+        bboxes_xywh = [np.zeros((self.max_bbox_per_scale, 4)) for _ in range(3)]
+
+        bbox_count = np.zeros((3,))
+
+        for bbox in bboxes:
+            bbox_coor = bbox[:4]
+            bbox_class_ind = bbox[4]
+
+            onehot = np.zeros(self.num_classes, dtype=np.float)
+
+            if self.num_classes == 2:
+                bbox_class_ind = 1
+
+            onehot[bbox_class_ind] = 1.0
+            uniform_distribution = np.full(self.num_classes, 1.0 / self.num_classes)
+            deta = 0.01
+            smooth_onehot = onehot * (1 - deta) + deta * uniform_distribution
+
+            bbox_xywh = np.concatenate([(bbox_coor[2:] + bbox_coor[:2]) * 0.5, bbox_coor[2:] - bbox_coor[:2]], axis=-1)
+
+            bbox_xywh_scaled = 1.0 * bbox_xywh[np.newaxis, :] / self.strides[:, np.newaxis]
+
+            iou = []
+            exist_positive = False
+
+            for i in range(3):
+                anchors_xywh = np.zeros((self.anchor_per_scale, 4))
+                anchors_xywh[:, 0:2] = np.floor(bbox_xywh_scaled[i, 0:2]).astype(np.int32) + 0.5
+                anchors_xywh[:, 2:4] = self.anchors[i]
+
+                iou_scale = bbox_iou(bbox_xywh_scaled[i][np.newaxis, :], anchors_xywh)
+                iou.append(iou_scale)
+
+                iou_mask = iou_scale > 0.3
+
+                if np.any(iou_mask):
+                    xind, yind = np.floor(bbox_xywh_scaled[i, 0:2]).astype(np.int32)
+
+                    label[i][yind, xind, iou_mask, :] = 0
+                    label[i][yind, xind, iou_mask, 0:4] = bbox_xywh
+                    label[i][yind, xind, iou_mask, 4:5] = 1.0
+                    label[i][yind, xind, iou_mask, 5:] = smooth_onehot
+
+                    bbox_ind = int(bbox_count[i] % self.max_bbox_per_scale)
+                    bboxes_xywh[i][bbox_ind, :4] = bbox_xywh
+                    bbox_count[i] += 1
+                    exist_positive = True
+
+            if not exist_positive:
+                best_anchor_ind = np.argmax(np.array(iou).reshape(-1), axis=-1)
+                best_detect = int(best_anchor_ind / self.anchor_per_scale)
+                best_anchor = int(best_anchor_ind % self.anchor_per_scale)
+                xind, yind = np.floor(bbox_xywh_scaled[best_detect, 0:2]).astype(np.int32)
+
+                label[best_detect][yind, xind, best_anchor, :] = 0
+                label[best_detect][yind, xind, best_anchor, 0:4] = bbox_xywh
+                label[best_detect][yind, xind, best_anchor, 4:5] = 1.0
+                label[best_detect][yind, xind, best_anchor, 5:] = smooth_onehot
+
+                bbox_ind = int(bbox_count[best_detect] % self.max_bbox_per_scale)
+                bboxes_xywh[best_detect][bbox_ind, :4] = bbox_xywh
+                bbox_count[best_detect] += 1
+
+        label_sbbox, label_mbbox, label_lbbox = label
+        sbboxes, mbboxes, lbboxes = bboxes_xywh
+
+        return label_sbbox, label_mbbox, label_lbbox, sbboxes, mbboxes, lbboxes
