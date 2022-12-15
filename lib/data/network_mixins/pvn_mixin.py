@@ -29,7 +29,6 @@ class PvnMixin():
             return data['rgb'], data['pcld_xyz'], data['pcld_feats'], data['sampled_index'], data['labels'], \
                     data['kpts_targ_offst'], data['ctr_targ_offst'], data['mask_label'], data['crop_factor']
 
-            
 
     def get_dict(self, index):
         #dpt, rgb_normalized, mask, Rt, xy_ofst, bbox, crop_index, crop_factor, uncropped = self.read_pvn_data(index)

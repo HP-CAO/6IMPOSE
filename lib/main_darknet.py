@@ -34,9 +34,6 @@ class MainDarknet(Network):
 
     def __init__(self, params: MainDarknetParams):
         super().__init__(params)
-        self.image_buffer = None
-        self.height = None
-        self.width = None
         self.dn_binary = './darknet/darknet'
 
         self.network = None

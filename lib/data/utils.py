@@ -22,22 +22,6 @@ def load_mesh(ptxyz_pth, scale=0.001, n_points=2000):
     return pointxyz
 
 
-# def get_pointxyz_linemod(ptxyz_pth, scale=0.001):
-#     pointxyz = ply_vtx(ptxyz_pth) * scale
-#     dellist = [j for j in range(0, len(pointxyz))]
-#     dellist = random.sample(dellist, len(pointxyz) - 2000)
-#     pointxyz = np.delete(pointxyz, dellist, axis=0)
-#     return pointxyz
-#
-#
-# def get_pointxyz_blender(ptxyz_pth, scale=0.01):
-#     pointxyz = ply_vtx(ptxyz_pth) * scale
-#     dellist = [j for j in range(0, len(pointxyz))]
-#     dellist = random.sample(dellist, len(pointxyz) - 2000)
-#     pointxyz = np.delete(pointxyz, dellist, axis=0)
-#     return pointxyz
-
-
 def get_pointxyz_unity(cls_type_id):
     """
     return: point cloud in meters

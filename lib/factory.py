@@ -16,7 +16,9 @@ class NetworkFactory:
 
     def get_network(self) -> Network:
         """ build network according to params"""
-        if self.params.network == Networks.pvn3d:
+        if self.params.network == Networks.yolo:
+            raise NotImplementedError("We use Darknet implementation now!")
+        elif self.params.network == Networks.pvn3d:
             from lib.main_pvn import MainPvn3d
             return MainPvn3d(self.params)
         elif self.params.network == Networks.darknet:
@@ -29,6 +31,7 @@ class NetworkFactory:
         """ get default params """
         if self.params.network == Networks.yolo:
             raise NotImplementedError("We use Darknet implementation now!")
+
         elif self.params.network == Networks.pvn3d:
             from lib.main_pvn import MainPvn3dParams
             return MainPvn3dParams()
@@ -52,9 +55,6 @@ class DatasetFactory:
         elif dataset == Datasets.linemod:
             from lib.data.linemod.linemod import LineMod
             gen = LineMod
-        elif dataset == Datasets.unity_grocieries_real:
-            from lib.data.unity_groceries_real.unity_groceries_real import UGReal
-            gen = UGReal
         else:
             raise AssertionError("Unknown dataset: ", dataset)
 
@@ -83,7 +83,6 @@ class DatasetFactory:
         import pickle
         _, _, spec, data_config = self.__get_gen_args_spec_dataconfig(mode)
 
-        # record_file = os.path.join(self.data_config.preprocessed_folder, "preprocessed.tfrecord")
         with open(os.path.join(data_config.preprocessed_folder, 'tfrecord', "dtypes_preprocessed.bin"), 'rb') as F:
             dtype_dict = pickle.load(F)
 
@@ -104,10 +103,10 @@ class DatasetFactory:
         shards = tf.data.Dataset.from_tensor_slices(files)
         tf_ds = shards.interleave(lambda x: tf.data.TFRecordDataset(x, compression_type='ZLIB'),
                                   num_parallel_calls=tf.data.AUTOTUNE)
-
         tf_ds = tf_ds.shuffle(buffer_size=1000)
 
-        return tf_ds.map(parse_tfrecord, num_parallel_calls=tf.data.AUTOTUNE).map(get_data_as_tuple, num_parallel_calls=tf.data.AUTOTUNE)
+        return tf_ds.map(parse_tfrecord, num_parallel_calls=tf.data.AUTOTUNE).map(get_data_as_tuple,
+                                                                                  num_parallel_calls=tf.data.AUTOTUNE)
 
     def __get_gen_args_spec_dataconfig(self, mode):
         data_name = self.params.dataset_params.data_name
@@ -117,10 +116,14 @@ class DatasetFactory:
         train_size = self.params.dataset_params.train_size
         augment_per_image = self.params.dataset_params.augment_per_image
 
-        if self.params.network == Networks.darknet:
+        if self.params.network == Networks.yolo or self.params.network == Networks.darknet:
 
-            strides = None # todo might be useless
-            anchors = None
+            if self.params.network == Networks.yolo:
+                strides = np.array(self.params.yolo_params.yolo_strides).astype(np.int32)
+                anchors = (np.array(self.params.yolo_params.yolo_anchors).T / strides).T
+            else:
+                strides = None
+                anchors = None
             crop_image = False  # does not make sense for yolo
             shuffle = True
 
@@ -140,18 +143,13 @@ class DatasetFactory:
                 from lib.data.linemod.linemod_settings import LineModSettings
                 gen = LineModYolo
                 gen_data_config = LineModSettings
-            elif self.params.dataset_params.dataset == Datasets.unity_grocieries_real:
-                from lib.data.unity_groceries_real.unity_groceries_real_yolo import UGRealYolo
-                from lib.data.unity_groceries_real.unity_groceries_real_settings import UGRealSettings
-                gen = UGRealYolo
-                gen_data_config = UGRealSettings
             else:
                 raise AssertionError(f"Unknown dataset for {self.params.network}: ", self.params.dataset_params.dataset)
 
             data_config = gen_data_config(data_name, cls_type, use_preprocessed, crop_image,
                                           size_all, train_size, augment_per_image=augment_per_image)
             from lib.data.dataset_params import yolo_tensor_spec
-            spec = yolo_tensor_spec(data_config.n_classes, data_config.yolo_rgb_shape, mode)
+            spec = yolo_tensor_spec(data_config.n_classes, data_config.yolo_rgb_shape, data_config.ori_rgb_shape, mode)
 
         elif self.params.network == Networks.pvn3d:
             from lib.data.dataset_params import pvn3d_tensor_spec
@@ -192,19 +190,12 @@ class DatasetFactory:
                 gen = LineMod
                 gen_data_config = LineModSettings
 
-            elif self.params.dataset_params.dataset == Datasets.unity_grocieries_real:
-                from lib.data.unity_groceries_real.unity_groceries_real import UGReal
-                from lib.data.unity_groceries_real.unity_groceries_real_settings import UGRealSettings
-                gen = UGReal
-                gen_data_config = UGRealSettings
-
             else:
                 raise AssertionError("Unknown dataset: ", self.params.dataset_params.dataset)
-
 
         else:
             raise AssertionError('Unknown network for dataset: ', self.params.network)
 
         data_config = gen_data_config(data_name, cls_type, use_preprocessed, crop_image,
-                                      size_all, train_size, augment_per_image=augment_per_image)
+                                        size_all, train_size, augment_per_image=augment_per_image)
         return gen, args, spec, data_config

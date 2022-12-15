@@ -113,6 +113,7 @@ def process_datapoint(task: PreprocessTask):
     first_run = True
 
     if used_format == SaveFormat.numpy:
+        preprocessed_save_path_numpy = os.path.join(preprocessed_save_path, 'numpy')
         # save n_aug+1 datapoints per image
         for img_id in iterator:
             base_save_id = n_aug * img_id
@@ -128,9 +129,9 @@ def process_datapoint(task: PreprocessTask):
 
                 for key, item in data.items():
                     if first_run:
-                        ensure_fd(os.path.join(preprocessed_save_path, key))
+                        ensure_fd(os.path.join(preprocessed_save_path_numpy, key))
 
-                    np.save(os.path.join(preprocessed_save_path, key, save_name), item)
+                    np.save(os.path.join(preprocessed_save_path_numpy, key, save_name), item)
                 first_run = False
                 processed += 1
 
@@ -186,7 +187,7 @@ def process_datapoint(task: PreprocessTask):
 
         img_dir = os.path.join(preprocessed_save_path, 'obj')
 
-        model_dir = os.path.join(task.params.monitor_params.model_dir, task.params.monitor_params.model_name)
+        model_dir = os.path.join(task.params.monitor_params.model_dir, 'darknet_yolo', dataset.data_config.cls_type)
 
         ensure_fd(img_dir)
         ensure_fd(model_dir)
@@ -212,7 +213,7 @@ def process_datapoint(task: PreprocessTask):
                      f"train = {os.path.join(preprocessed_save_path, 'train.txt')}",
                      f"valid = {os.path.join(preprocessed_save_path, 'test.txt')}",
                      f"names = {os.path.join(preprocessed_save_path, 'obj.names')}",
-                     f"backup = {model_dir}"
+                     f"backup = {os.path.join('..', model_dir)}"
                      ]
         data_text = '\n'.join(data_text)
 

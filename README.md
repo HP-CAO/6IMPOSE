@@ -22,6 +22,48 @@ Some modifications needed:
 - After compiling, you maybe need to modify the path in ```./pnet2_layers/cpp_modules.py```
 
 ### Datasets
+Create a link to dataset
+```
+$ cd sim2real6d
+$ ln -s /mnt/scratch1/dataset/ .
+```
+
+Dataset structure:
+```
+- dataset
+  - blender
+    - bl_obj_kpts
+    - bl_obj_mesh
+    - blender
+      - blender_linemod
+        - 01 
+          - depth 
+          - gt 
+          - mask
+          - rgb 
+          - preprocessd
+            - darknet
+            - tfrecord
+            - numpy 
+          gt.json
+          params.json
+         ...
+      ...      
+                 
+  - linemod
+    - lm_obj_kpts
+    - lm_obj_mesh
+    - linemod
+      - data 
+        - 01
+          - rgb
+          - mask
+          - depth
+          gt.yml
+        ...
+      ...                 
+```
+
 - *blender*: synthetically generated Dataset using Blender.
 - *linemod*: Kinect V1 RGBD dataset with object poses. We download the [LM dataset](https://drive.google.com/drive/folders/19ivHpaKm9dOrr12fzC8IDFczWRPFxho7) as in original [pvn3d implementation](https://github.com/ethnhe/PVN3D)
 
@@ -58,6 +100,13 @@ arguments:
   --mode MODE          [train|val|full] decide image split of dataset
   --format FORMAT      [tfrecord|numpy|darknet] decide save format (WIP for darknet ajust path
                         in script)
+```
+Example to preprocess training and validation data for darknet yolo.
+
+```
+python preprocessor.py --config config/sim2real_darknet.json --mode train --format darknet --params dataset_params/cls_type cam
+
+python preprocessor.py --config config/sim2real_darknet.json --mode val --format darknet --params dataset_params/cls_type cam
 ```
 
 ## Training

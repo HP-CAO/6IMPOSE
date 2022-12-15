@@ -1,0 +1,47 @@
+{
+    "network": "darknet",
+    "dataset_params": {
+        "dataset": "blender",
+        "data_name": "blender_linemod",
+        "cls_type": "all",
+        "use_preprocessed": true,
+        "train_batch_size": 32,
+        "val_batch_size": 32,
+        "test_batch_size": 1,
+        "train_size": 19800,
+        "size_all": 20000,
+        "test_num": 10,
+        "augment_per_image": 16
+    },
+    "trainer_params": {
+        "distribute_training": false,
+        "distribute_train_device": [0, 1],
+        "gious_loss_discount": 1.0,
+        "conf_loss_discount": 1.0,
+        "prob_loss_discount": 1.0,
+        "reduce_loss_mean": true,
+        "learning_rate": 0.0005
+    },
+    "darknet_params": {
+        "cfg_file": ""
+    },
+    "monitor_params": {
+        "log_root": "./logs/",
+        "model_dir": "./models/",
+        "resnet_weights_name": "",
+        "mode": "test",
+        "force_override": false,
+        "model_name": "",
+        "weights_path": null,
+        "best_loss": 1000.0,
+        "if_validation": true,
+        "train_epochs": 30,
+        "val_frequency": 1,
+        "performance_eval_frequency_factor": 1,
+        "val_epochs": 1,
+        "if_model_summary": false,
+        "sim2real_eval": true,
+        "model_save_period": 1,
+        "write_log": true
+    }
+}

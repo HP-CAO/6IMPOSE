@@ -3,18 +3,15 @@ import datetime
 
 """ Param Structs and Constants without importing tf"""
 
-
 class Datasets:
     blender = 'blender'
     linemod = 'linemod'
     unity_grocieries_real = 'ugreal'
 
-
 class Networks:
     pvn3d = 'pvn3d'
     yolo = 'yolo'
     darknet = 'darknet'
-
 
 class DatasetParams:
     dataset: str
@@ -47,7 +44,6 @@ class MonitorParams:
         self.sim2real_eval = False
         self.model_save_period = 5
         self.write_log = True
-
 
 class NetworkParams:
     network: str

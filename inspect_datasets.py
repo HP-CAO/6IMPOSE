@@ -1,6 +1,4 @@
 import os
-from lib.data.unity.unity import Unity
-
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "1"
 import argparse

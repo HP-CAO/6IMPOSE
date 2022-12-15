@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import Model
-from tensorflow.keras.layers import Conv1D, BatchNormalization, Layer, Input
+from tensorflow.keras.layers import Conv1D, BatchNormalization, Layer
 from lib.net.pointnet2_utils.pnet2_layers.layers import Pointnet_SA
 
 
@@ -19,7 +19,6 @@ def farthest_point_sample_and_group(n_points, xyz, n_samples):
     dist = tf.ones(shape=(bs, N)) * np.inf
     sample_mask = tf.zeros(shape=(bs, N))
     sample_id = tf.random.uniform(shape=(bs,), maxval=N, dtype=tf.int32)  # bs
-    # sample_mask = sample_mask + tf.one_hot(sample_id, depth=N)
     neighbour_index_list = []  # bs, n_points, n_samples
 
     for i in range(n_points - 1):
@@ -218,19 +217,6 @@ class Pointnet_FP(Layer):
 
     def call(self, xyz_target, xyz_source, feats_target, feats_source, training=True):
 
-        #if len(tf.shape(xyz_target)) < 3:
-        #    xyz_target = tf.expand_dims(xyz_target, axis=0)
-
-        #if len(tf.shape(xyz_source)) < 3:
-        #    xyz_source = tf.expand_dims(xyz_source, axis=0)
-
-        #if feats_target is not None:
-        #    if len(tf.shape(feats_target)) < 3:
-        #       feats_target = tf.expand_dims(feats_target, axis=0)
-        #if feats_source is not None:
-        #    if len(tf.shape(feats_source)) < 3:
-        #        feats_source = tf.expand_dims(feats_source, axis=0)
-
         weight, neighbour_idx = three_nn(xyz_source, xyz_target)
         interpolated_feats = three_interpolate(feats_source, neighbour_idx, weight)
 
@@ -245,12 +231,7 @@ class Pointnet_FP(Layer):
         for i, mlp_layer in enumerate(self.mlp_list):
             new_feats_target = mlp_layer(new_feats_target, training=training)
 
-
-
-        #new_feats_target = tf.squeeze(new_feats_target) # dont squeeze just get rid of dim=2
         new_feats_target = new_feats_target[:, :, 0, :]
-        #if len(tf.shape(new_feats_target)) < 3:
-        #    new_feats_target = tf.expand_dims(new_feats_target, axis=0)
 
         return new_feats_target
 

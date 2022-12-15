@@ -137,7 +137,6 @@ def rt_svd_transform(A, B):
     R: mxm rotation matrix
     t: mx1 translation vector
     """
-    # assert A.shape == B.shape, "shape of A {} is != shape of B {}".format(A.shape, B.shape) does not work in graph mode
 
     n_kp_cp, _ = A.shape
 
@@ -893,86 +892,3 @@ def get_Rt_varying_matrices_top(R_top, t_top, A, B, weights_vector, radius=0.05,
     variation_t = tf.concat([t_top, batch_t_translate_vary], axis=0)
 
     return variation_R, variation_t
-
-# @tf.function()  # non-order
-# def get_Rt_varying_matrices_top(R_top, t_top, A, B, weights_vector, radius=0.05, batch_size_per_pose=32, factor=1.0, angle_bound=0.15):
-#     """
-#     need test
-#     :param initial_pose:
-#     :param A:
-#     :param B:
-#     :param radius:
-#     :param batch_size:
-#     :return:
-#     """
-#
-#     R = R_top  # k ,3, 3
-#     t = t_top  # k, 3
-#
-#     n, _, _ = R_top.shape
-#
-#     n_xyz_pcld, c = B.shape
-#     n_xyz_mesh, c = A.shape
-#
-#     t = tf.repeat(tf.expand_dims(t, axis=1), axis=1, repeats=n_xyz_mesh)  # [k, n_mesh, 3]
-#     A = tf.matmul(A, tf.transpose(R, perm=(0, 2, 1))) + t  # [k, mesh, 3]
-#
-#     B_repeats = tf.repeat(tf.expand_dims(B, axis=1), repeats=n_xyz_mesh, axis=1)  # [n_xyz_pcld, n_xyz_mesh, 3]
-#     A_repeats = tf.repeat(tf.expand_dims(A, axis=1), repeats=n_xyz_pcld, axis=1)  # [n, n_xyz_pcld, n_xyz_mesh, 3]
-#
-#     distance_matrix = tf.linalg.norm(tf.subtract(B_repeats, A_repeats), axis=-1)  # [n, n_xyz_pcld, n_xyz_mesh]
-#     corr_index = tf.argmin(distance_matrix, axis=-1)  # [n, n_xyz_pcld]
-#
-#     distance_corres = tf.gather(distance_matrix, corr_index, batch_dims=2)  # [n, n_xyz_pcld]
-#
-#     num_non_zeros = tf.math.count_nonzero(weights_vector, dtype=tf.float32)
-#     distance_corres = tf.multiply(distance_corres, weights_vector)  # [n, n_xyz_pcld]
-#
-#     std_trans_xyz = (tf.reduce_sum(distance_corres, axis=1) / num_non_zeros) * factor  # (n,)
-#     std_angle_xyz = tf.minimum(tf.math.asin(tf.minimum(std_trans_xyz / radius, 1.0)), angle_bound)  # (n, )
-#
-#     num_random_samples = batch_size_per_pose - 1
-#
-#     # todo check here
-#     batch_angle_xyz = tf.random.uniform(shape=(num_random_samples, 3, 1), minval=-1 * std_angle_xyz, maxval=std_angle_xyz)  # [n_samples, 3, k]
-#     batch_angle_xyz = tf.expand_dims(tf.transpose(batch_angle_xyz, perm=(2, 1, 0)), axis=-1)  # [k, 3, n_samples, 1]
-#
-#     batch_t_translate = tf.random.uniform(shape=(num_random_samples, 3, 1), minval=-1 * std_trans_xyz, maxval=std_trans_xyz)  # [n_samples, 3, k] # todo check the t
-#     batch_t_translate = tf.reshape(batch_t_translate, shape=(n, -1, 3))  # [n_samples, 3]  # todo correspondence beteen
-#     # angle and translate
-#
-#     batch_sin_xyz = tf.reshape(tf.math.sin(batch_angle_xyz), shape=(3, -1, 1))   # [3, n_samples, 1]
-#     batch_cos_xyz = tf.reshape(tf.math.cos(batch_angle_xyz), shape=(3, -1, 1))   # [3, n_samples, 1]
-#
-#     ones = tf.ones(shape=(num_random_samples * n, 1), dtype=tf.float32)
-#     zeros = tf.zeros(shape=(num_random_samples * n, 1), dtype=tf.float32)
-#
-#     batch_R_x = tf.reshape(tf.concat([ones, zeros, zeros,
-#                                       zeros, batch_cos_xyz[0], -1 * batch_sin_xyz[0],
-#                                       zeros, batch_sin_xyz[0], batch_cos_xyz[0]], axis=1), shape=(-1, 3, 3))
-#
-#     batch_R_y = tf.reshape(tf.concat([batch_cos_xyz[1], zeros, batch_sin_xyz[1],
-#                                       zeros, ones, zeros,
-#                                       -1 * batch_sin_xyz[1], zeros, batch_cos_xyz[1]], axis=1), shape=(-1, 3, 3))
-#
-#     batch_R_z = tf.reshape(tf.concat([batch_cos_xyz[2], -1 * batch_sin_xyz[2], zeros,
-#                                       batch_sin_xyz[2], batch_cos_xyz[2], zeros,
-#                                       zeros, zeros, ones], axis=1), shape=(-1, 3, 3))
-#
-#     batch_R_matrix = tf.matmul(batch_R_z, tf.matmul(batch_R_y, batch_R_x))
-#     batch_R_matrix = tf.reshape(batch_R_matrix, shape=(n, -1, 3, 3))
-#
-#     R_top_expand = tf.repeat(tf.expand_dims(R_top, axis=1), repeats=num_random_samples, axis=1)
-#     batch_R_matrix_vary = tf.matmul(batch_R_matrix, R_top_expand)  # [n, n_samples, 3, 3]
-#
-#     batch_t_translate_vary = tf.squeeze(
-#         tf.matmul(batch_R_matrix_vary,
-#                   tf.reshape(batch_t_translate, shape=(n, -1, 3, 1)))) + batch_t_translate  # [n, n_samples, 3]
-#
-#     batch_R_matrix_vary = tf.reshape(batch_R_matrix_vary, shape=(-1, 3, 3))
-#
-#     batch_t_translate_vary = tf.reshape(batch_t_translate_vary, shape=(-1, 3))
-#     variation_R = tf.concat([R_top, batch_R_matrix_vary], axis=0)
-#     variation_t = tf.concat([t_top, batch_t_translate_vary], axis=0)
-#
-#     return variation_R, variation_t

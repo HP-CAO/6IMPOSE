@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Conv1D
-from lib.lib.pointnet2_utils.pnet2_layers.layers import Pointnet_SA, Pointnet_FP
+from lib.net.pointnet2_utils.pnet2_layers.layers import Pointnet_SA, Pointnet_FP
 
 
 class PointNet2Params:

@@ -6,7 +6,6 @@ from lib.data.utils import rescale_image_bbox, validate_bbox, get_bbox_from_mask
 from lib.net.utils import bbox_iou
 
 
-
 class YoloMixin():
     def __init__(self, strides, anchors, *args, **kwargs):
         super().__init__(*args, **kwargs)

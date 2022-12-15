@@ -75,7 +75,6 @@ class Network(ABC):
         # data_from_tfrecord, data_from_generator
         if self.data_config.use_preprocessed:
             train_dataset = self.factory.data_from_tfrecord('train').batch(self.global_train_batch_size).prefetch(tf.data.AUTOTUNE)
-            # train_dataset = self.factory.data_from_generator('train').batch(self.global_train_batch_size).prefetch(tf.data.AUTOTUNE)
         else:
             train_dataset = self.factory.data_from_generator('train').batch(self.global_train_batch_size).prefetch(tf.data.AUTOTUNE)
 

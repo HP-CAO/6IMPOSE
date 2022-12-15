@@ -18,6 +18,7 @@ from lib.network import Network
 from lib.params import NetworkParams, Networks
 from lib.data.utils import expand_dim, get_mesh_diameter, load_mesh
 from lib.monitor.evaluator import EvalResult, EvalResultType, cal_accuracy, cal_add_dis, cal_adds_dis, cal_auc
+from lib.utils import ensure_fd
 from tensorflow.keras.layers import MaxPool2D
 
 
@@ -83,6 +84,7 @@ class MainPvn3d(Network):
             self.model.load_weights(self.params.monitor_params.weights_path)
             print('Pre-trained model loaded successfully')
 
+
     def initial_trainer_and_model(self):
         self.trainer = TrainerPvn3d(self.params.trainer_params)
 
@@ -92,7 +94,6 @@ class MainPvn3d(Network):
         #                       num_cls=self.data_config.n_classes,
         #                       num_cpts=self.data_config.n_ctr_points,
         #                       dim_xyz=self.data_config.dim_pcld_xyz)
-
         self.initial_model(self.params.monitor_params.weights_path)
 
         # call model with fake data to build
@@ -105,6 +106,8 @@ class MainPvn3d(Network):
         sampled_index = tf.zeros((bs, n_samples), tf.int32)
         crop_factor = tf.ones((bs,), tf.int32)
         self.forward_pass((rgb, pcld_xyz, pcld_feats, sampled_index, crop_factor))
+
+
 
     @tf.function
     def train_step(self, inputs):
@@ -304,6 +307,7 @@ class MainPvn3d(Network):
                 img_pre_ktps, pts_2d_pre = vis_pre_kpts(rgb.copy(), kpts_voted, xy_offset, cam_intrinsic)
                 img_pre_offset = vis_offset_value(sampled_index, pre_segs, kp_pre_ofst.numpy(),
                                                   cp_pre_ofst.numpy(), pts_2d_gt, pts_2d_pre, rgb.shape)
+
 
                 try:
                     feature_map_image = self.get_feature_maps_image(input_data)
