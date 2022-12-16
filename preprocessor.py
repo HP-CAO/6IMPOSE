@@ -1,5 +1,4 @@
 import os
-
 from lib.params import Networks
 
 shard_every_n_datapoints = 800  # pvn3d: 200, yolo: 800
@@ -100,8 +99,7 @@ def process_datapoint(task: PreprocessTask):
     for key, val in AugmentSettings.__dict__.items():
         if not key.startswith('__') and key != 'cache':
             augment_dict[key] = val
-    with open(os.path.join(preprocessed_save_path, "augment_settings.yaml"), 'w') as F:
-        yaml.dump(augment_dict, F)
+
 
     # log only one worker
     if worker_id == 0:
@@ -114,6 +112,10 @@ def process_datapoint(task: PreprocessTask):
 
     if used_format == SaveFormat.numpy:
         preprocessed_save_path_numpy = os.path.join(preprocessed_save_path, 'numpy')
+        ensure_fd(preprocessed_save_path_numpy)
+        with open(os.path.join(preprocessed_save_path_numpy, "augment_settings.yaml"), 'w') as F:
+            yaml.dump(augment_dict, F)
+
         # save n_aug+1 datapoints per image
         for img_id in iterator:
             base_save_id = n_aug * img_id
@@ -139,14 +141,15 @@ def process_datapoint(task: PreprocessTask):
         # ---- write directly to sharded tfrecord files----
         options = tf.io.TFRecordOptions(compression_type='ZLIB')
 
-        preprocessed_save_path = os.path.join(preprocessed_save_path, 'tfrecord')
+        preprocessed_save_path_tfrecord = os.path.join(preprocessed_save_path, 'tfrecord')
+        ensure_fd(preprocessed_save_path_tfrecord)
+        with open(os.path.join(preprocessed_save_path_tfrecord, "augment_settings.yaml"), 'w') as F:
+            yaml.dump(augment_dict, F)
 
-        # add mode to
-
-        ensure_fd(preprocessed_save_path)
+        ensure_fd(preprocessed_save_path_tfrecord)
 
         writer = tf.io.TFRecordWriter(
-            os.path.join(preprocessed_save_path, f"preprocessed_{n_aug * task.indices[0]}.tfrecord"), options=options)
+            os.path.join(preprocessed_save_path_tfrecord, f"preprocessed_{n_aug * task.indices[0]}.tfrecord"), options=options)
 
         # save n_aug+1 datapoints per image
         for img_id in iterator:
@@ -172,20 +175,23 @@ def process_datapoint(task: PreprocessTask):
                 if (processed % shard_every_n_datapoints) == 0:
                     writer.close()
                     writer = tf.io.TFRecordWriter(
-                        os.path.join(preprocessed_save_path, f"preprocessed_{base_save_id + i}.tfrecord"),
+                        os.path.join(preprocessed_save_path_tfrecord, f"preprocessed_{base_save_id + i}.tfrecord"),
                         options=options)
 
         writer.close()
 
         # dump dtypes for parsing binary files
         import pickle
-        pickle.dump(dtype_dict, open(os.path.join(preprocessed_save_path, "dtypes_preprocessed.bin"), 'wb'))
+        pickle.dump(dtype_dict, open(os.path.join(preprocessed_save_path_tfrecord, "dtypes_preprocessed.bin"), 'wb'))
 
     elif used_format == SaveFormat.darknet:
         import cv2
-        preprocessed_save_path = os.path.join(preprocessed_save_path, "darknet")
+        preprocessed_save_path_darknet = os.path.join(preprocessed_save_path, "darknet")
+        ensure_fd(preprocessed_save_path_darknet)
+        with open(os.path.join(preprocessed_save_path_darknet, "augment_settings.yaml"), 'w') as F:
+            yaml.dump(augment_dict, F)
 
-        img_dir = os.path.join(preprocessed_save_path, 'obj')
+        img_dir = os.path.join(preprocessed_save_path_darknet, 'obj')
 
         model_dir = os.path.join(task.params.monitor_params.model_dir, 'darknet_yolo', dataset.data_config.cls_type)
 
@@ -194,7 +200,7 @@ def process_datapoint(task: PreprocessTask):
 
         if dataset.data_config.cls_type == 'all':
             n_classes = max(dataset.data_config.cls_lst)+1
-            with open(os.path.join(preprocessed_save_path, 'obj.names'), 'w') as F:
+            with open(os.path.join(preprocessed_save_path_darknet, 'obj.names'), 'w') as F:
                 classes = []
                 for i in range(n_classes):
                     try:
@@ -206,18 +212,18 @@ def process_datapoint(task: PreprocessTask):
         else:
             n_classes = 1
             classes = [dataset.data_config.cls_type]
-            with open(os.path.join(preprocessed_save_path, 'obj.names'), 'w') as F:
+            with open(os.path.join(preprocessed_save_path_darknet, 'obj.names'), 'w') as F:
                 F.write('\n'.join(classes))
 
         data_text = [f"classes = {n_classes}",
-                     f"train = {os.path.join(preprocessed_save_path, 'train.txt')}",
-                     f"valid = {os.path.join(preprocessed_save_path, 'test.txt')}",
-                     f"names = {os.path.join(preprocessed_save_path, 'obj.names')}",
-                     f"backup = {os.path.join('..', model_dir)}"
+                     f"train = {os.path.join(preprocessed_save_path_darknet, 'train.txt')}",
+                     f"valid = {os.path.join(preprocessed_save_path_darknet, 'test.txt')}",
+                     f"names = {os.path.join(preprocessed_save_path_darknet, 'obj.names')}",
+                     f"backup = {model_dir}"
                      ]
         data_text = '\n'.join(data_text)
 
-        with open(os.path.join(preprocessed_save_path, 'obj.data'), 'w') as F:
+        with open(os.path.join(preprocessed_save_path_darknet, 'obj.data'), 'w') as F:
             F.write(data_text)
 
         processed_ids = []
@@ -264,7 +270,7 @@ def process_datapoint(task: PreprocessTask):
         else:
             raise AssertionError("Unknown mode for creating train/test.txt: ", task.mode)
 
-        with open(os.path.join(preprocessed_save_path, output), 'a') as F:
+        with open(os.path.join(preprocessed_save_path_darknet, output), 'a') as F:
             F.write('\n'.join(processed_ids))
             F.write('\n')
 
@@ -361,16 +367,17 @@ if __name__ == '__main__':
 
     if used_format == SaveFormat.numpy:
         n_aug = max(dataset.data_config.augment_per_image, 1)
-        print("Renaming to consistent index list: ", preprocessed_save_path)
+        preprocessed_save_path_numpy = os.path.join(preprocessed_save_path, 'numpy')
+        print("Renaming to consistent index list: ", preprocessed_save_path_numpy)
         no = 0
         start_ind = imgInds[0][0] * n_aug
-        types = [x for x in os.listdir(preprocessed_save_path) if "." not in x]  # gives folder names
+        types = [x for x in os.listdir(preprocessed_save_path_numpy) if "." not in x]  # gives folder names
         for ind in tqdm(range(start_ind, start_ind + n_datapoints)):
             is_datapoint = False
             for data_type in types:
-                if os.path.isfile(os.path.join(preprocessed_save_path, data_type, f"pre_{ind:06}.npy")):
-                    src_file = os.path.join(preprocessed_save_path, data_type, f"pre_{ind:06}.npy")
-                    tar_file = os.path.join(preprocessed_save_path, data_type, f"{no:06}.npy")
+                if os.path.isfile(os.path.join(preprocessed_save_path_numpy, data_type, f"pre_{ind:06}.npy")):
+                    src_file = os.path.join(preprocessed_save_path_numpy, data_type, f"pre_{ind:06}.npy")
+                    tar_file = os.path.join(preprocessed_save_path_numpy, data_type, f"{no:06}.npy")
                     os.rename(src_file, tar_file)
                     is_datapoint = True
 
@@ -383,5 +390,6 @@ if __name__ == '__main__':
         meta_dict = {'n_datapoints': num}
         import json
 
-        with open(os.path.join(preprocessed_save_path, 'tfrecord', 'meta.json'), 'w') as F:
+        preprocessed_save_path_tfrecord = os.path.join(preprocessed_save_path, 'tfrecord')
+        with open(os.path.join(preprocessed_save_path_tfrecord, 'meta.json'), 'w') as F:
             json.dump(meta_dict, F)

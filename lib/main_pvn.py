@@ -238,9 +238,10 @@ class MainPvn3d(Network):
         gt_pre_kpt_list = []
         gt_pre_kpt_offset_list = []
         feature_maps_list = []
+        numpy_preprocessed_folder = os.path.join(data_config.preprocessed_folder, 'numpy')
 
         if test_inds is None:
-            n_datapoints = len(os.listdir(os.path.join(data_config.preprocessed_folder, 'rgb')))
+            n_datapoints = len(os.listdir(os.path.join(numpy_preprocessed_folder, 'rgb')))
             test_inds = np.arange(0, n_datapoints)
 
         # sample visualization predictions
@@ -249,7 +250,7 @@ class MainPvn3d(Network):
 
         for i in tqdm.tqdm(test_inds):
             RT_gt, rgb, dpt, cam_intrinsic, crop_index, pcld_xyz, pcld_feats, sampled_index, crop_factor = \
-                self.get_data_preprocessed(data_config.preprocessed_folder, i)
+                self.get_data_preprocessed(numpy_preprocessed_folder, i)
             xy_offset = crop_index[:2]
 
             n_samples = self.model.num_pts
@@ -280,8 +281,7 @@ class MainPvn3d(Network):
             if i in random_ids:
                 # save prediction
 
-                label_info, kpts_targ_offst, ctr_targ_offst = self.get_data_preprocessed_gt(
-                    data_config.preprocessed_folder, i)
+                label_info, kpts_targ_offst, ctr_targ_offst = self.get_data_preprocessed_gt(numpy_preprocessed_folder, i)
 
                 label_list, _ = label_info
                 label_list = label_list[sample_inds]

@@ -239,24 +239,24 @@ class MainDarknet(Network):
 
         return bbox_list
 
-    def batch_detection_example():
-        args = parser()
-        check_arguments_errors(args)
-        batch_size = 3
-        random.seed(3)  # deterministic bbox colors
-        network, class_names, class_colors = darknet.load_network(
-            args.config_file,
-            args.data_file,
-            args.weights,
-            batch_size=batch_size
-        )
-        image_names = ['data/horses.jpg', 'data/horses.jpg', 'data/eagle.jpg']
-        images = [cv2.imread(image) for image in image_names]
-        images, detections, = batch_detection(network, images, class_names,
-                                              class_colors, batch_size=batch_size)
-        for name, image in zip(image_names, images):
-            cv2.imwrite(name.replace("data/", ""), image)
-        print(detections)
+    # def batch_detection_example():
+    #     args = parser()
+    #     check_arguments_errors(args)
+    #     batch_size = 3
+    #     random.seed(3)  # deterministic bbox colors
+    #     network, class_names, class_colors = darknet.load_network(
+    #         args.config_file,
+    #         args.data_file,
+    #         args.weights,
+    #         batch_size=batch_size
+    #     )
+    #     image_names = ['data/horses.jpg', 'data/horses.jpg', 'data/eagle.jpg']
+    #     images = [cv2.imread(image) for image in image_names]
+    #     images, detections, = batch_detection(network, images, class_names,
+    #                                           class_colors, batch_size=batch_size)
+    #     for name, image in zip(image_names, images):
+    #         cv2.imwrite(name.replace("data/", ""), image)
+    #     print(detections)
 
     def pre_training(self):
         pass

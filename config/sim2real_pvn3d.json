@@ -1,0 +1,130 @@
+{
+    "network": "pvn3d",
+    "dataset_params": {
+        "dataset": "blender",
+        "data_name": "blender_linemod",
+        "cls_type": "ape",
+        "train_batch_size": 20,
+        "val_batch_size": 40,
+        "test_batch_size": 1,
+        "crop_image": true,
+        "img_downsample_factor": 1,
+        "use_preprocessed": true,
+        "use_pvn_kp": false,
+        "train_size": 19800,
+        "size_all": 20000,
+        "augment_per_image": 16
+    },
+    "trainer_params": {
+        "distribute_training": false,
+        "distribute_train_device": [1],
+        "focal_loss_gamma": 2,
+        "focal_loss_alpha": null,
+        "reduce_loss_mean": true,
+        "learning_rate": 0.0001,
+        "kp_loss_discount": 1.0,
+        "sm_loss_discount": 0.01,
+        "cp_loss_discount": 1.0,
+        "kp_cp_loss_discount": 1,
+        "kp_cp_ofst_loss_discount": 1,
+        "seg_from_logits": false
+    },
+    "pvn3d_params": {
+        "resnet_params": {
+            "backbone_type": "resnet18",
+            "down_sample_factor": 8,
+            "backbone_weights": "",
+            "interpolation_method": "nearest",
+            "freeze_model": false,
+            "include_top": false
+        },
+        "psp_params": {
+            "build_seg_model": false,
+            "if_use_dropout": true,
+            "pyramid_block_output_size": [
+                1,
+                2,
+                5,
+                10
+            ],
+            "pyramid_conv_kernel": [
+                1,
+                1
+            ],
+            "pyramid_conv_dim": 512,
+            "feats_2_conv_dim": 1024,
+            "upsample_scale": 2,
+            "upsample_conv_kernel": [
+                3,
+                3
+            ],
+            "upsample_1_conv_dim": 256,
+            "upsample_2_conv_dim": 64,
+            "upsample_3_conv_dim": 64,
+            "psp_features_dim": 128,
+            "psp_features_conv_kernel": [
+                1,
+                1
+            ],
+            "activation": "Relu"
+        },
+        "point_net2_params": {
+            "bn": false,
+            "is_train": true,
+            "keep_prob": 0.5,
+            "return_features": true,
+            "use_tf_interpolation": true,
+            "n_sample_points": 256
+        },
+        "dense_fusion_params": {
+            "num_embeddings": 128,
+            "conv1d_kernel": 1,
+            "rgb_conv1d_dim": 256,
+            "pcl_conv1d_dim": 256,
+            "rgbd_feats1_conv1d_dim": 512,
+            "rgbd_feats2_conv1d_dim": 1024
+        },
+        "mlp_params": {
+            "kp_conv1d_1_dim": 128,
+            "kp_conv1d_2_dim": 64,
+            "kp_conv1d_3_dim": 16,
+            "cp_conv1d_1_dim": 128,
+            "cp_conv1d_2_dim": 64,
+            "cp_conv1d_3_dim": 16,
+            "seg_conv1d_1_dim": 128,
+            "seg_conv1d_2_dim": 64,
+            "seg_conv1d_3_dim": 16
+        }
+    },
+    "monitor_params": {
+        "log_root": "./logs/",
+        "model_dir": "./models/",
+        "resnet_weights_name": "",
+        "mode": "train",
+        "force_override": false,
+        "model_name": "ape",
+        "weights_path": null,
+        "best_loss": 1000.0,
+        "if_validation": true,
+        "train_epochs": 80,
+        "val_frequency": 1,
+        "performance_eval_frequency_factor": 1,
+        "val_epochs": 1,
+        "if_model_summary": true,
+        "sim2real_eval": true,
+        "model_save_period": 5,
+        "write_log": true,
+        "log_file_name": "ape"
+    },
+    "pprocess_params": {
+        "use_stochastic_icp": true,
+        "n_point_candidate": 10,
+        "scp_radius": 0.01,
+        "scp_batch_size": 128,
+        "scp_factor": 0.1,
+        "scp_iters": 5,
+        "scp_k": 10,
+        "distribution": "normal",
+        "angle_bound": 0.15
+    }
+}

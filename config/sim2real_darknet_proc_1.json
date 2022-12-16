@@ -15,7 +15,7 @@
     },
     "trainer_params": {
         "distribute_training": false,
-        "distribute_train_device": [0],
+        "distribute_train_device": [0, 1, 2, 3],
         "gious_loss_discount": 1.0,
         "conf_loss_discount": 1.0,
         "prob_loss_discount": 1.0,
@@ -23,7 +23,7 @@
         "learning_rate": 0.0005
     },
     "darknet_params": {
-        "cfg_file": "./config/yolo_lm_config/yolov4-tiny-lm-cam.cfg"
+        "cfg_file": "./config/yolov4-tiny-lm-cam.cfg"
     },
     "monitor_params": {
         "log_root": "./logs/",

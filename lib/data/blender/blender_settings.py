@@ -33,15 +33,14 @@ class BlenderSettings(DatasetSettings):
             lm_settings = LineModSettings('data')  # arg doesnt matter, only need obj_dict
             self.obj_dict = lm_settings.obj_dict
             self.sym_cls_ids = [10, 11]
-        elif self.data_name.endswith('_ugreal'):
-            from lib.data.unity_groceries_real.unity_groceries_real_settings import UGRealSettings
-            ugreal_settings = UGRealSettings('data')
-            self.obj_dict = ugreal_settings.obj_dict
-            self.sym_cls_ids = []
         else:
             self.obj_dict = {
                 'cpsduck': 1,
                 'stapler': 2,
+                'cpsglue': 3,
+                'wrench_13': 4,
+                'chew_toy': 5,
+                'pliers': 6,
                 'all': 100
             }
             self.sym_cls_ids = []
@@ -97,13 +96,7 @@ class BlenderSettings(DatasetSettings):
 
             self.mesh_scale = 0.001
 
-        elif self.data_name.endswith('_ugreal'):
-            self.mesh_paths = {}
-
-            self.mesh_scale = 1.0
-
-        self.preprocessed_folder = os.path.join(self.data_root,
-                                                "{:02}/preprocessed".format(self.obj_dict[self.cls_type]))
+        self.preprocessed_folder = os.path.join(self.data_root, "{:02}/preprocessed".format(self.obj_dict[self.cls_type]))
 
         # ================= yolo_configs ======================
         self.yolo_default_rgb_h = 416

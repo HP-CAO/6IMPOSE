@@ -109,6 +109,16 @@ python preprocessor.py --config config/sim2real_darknet.json --mode train --form
 python preprocessor.py --config config/sim2real_darknet.json --mode val --format darknet --params dataset_params/cls_type cam
 ```
 
+Example to preprocess training and validation data for pvn3d.
+
+```
+python preprocessor.py --config config/sim2real_pvn3d.json --mode  train --format tfrecord --params dataset_params/cls_type cam
+
+python preprocessor.py --config config/sim2real_pvn3d.json --mode  val --format numpy --params dataset_params/cls_type cam
+```
+
+
+
 ## Training
 ### Usage
 ```

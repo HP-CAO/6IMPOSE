@@ -149,7 +149,7 @@ class PvnMixin():
 
 
     def get_data_preprocessed(self, mode, index):
-        get_data = lambda name: np.load(os.path.join(self.data_config.preprocessed_folder, name, f"{index:06}.npy"))
+        get_data = lambda name: np.load(os.path.join(self.data_config.preprocessed_folder,'numpy', name, f"{index:06}.npy"))
 
         rgb = get_data("rgb").astype(np.float32)
         crop_down_factor = get_data("crop_factor")

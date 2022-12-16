@@ -73,6 +73,7 @@ class Network(ABC):
             self.global_val_batch_size = int(self.params.dataset_params.val_batch_size * num_gpus)
 
         # data_from_tfrecord, data_from_generator
+        # Here we use tfrecord data for training and numpy for validation if the preprocessed are enabled
         if self.data_config.use_preprocessed:
             train_dataset = self.factory.data_from_tfrecord('train').batch(self.global_train_batch_size).prefetch(tf.data.AUTOTUNE)
         else:
@@ -84,8 +85,10 @@ class Network(ABC):
             val_dataset = None
 
         if self.params.trainer_params.distribute_training:
+            devices_list = [f"/gpu:{gpu_id}" for gpu_id in self.params.trainer_params.distribute_train_device]
+
             self.strategy = \
-                tf.distribute.MirroredStrategy(devices=self.params.trainer_params.distribute_train_device,
+                tf.distribute.MirroredStrategy(devices=devices_list,
                                                cross_device_ops=tf.distribute.ReductionToOneDevice())
 
             options = tf.data.Options()

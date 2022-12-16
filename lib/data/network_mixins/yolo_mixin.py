@@ -22,7 +22,6 @@ class YoloMixin():
         self.downsample_factor = 1
         self.num_classes = self.data_config.n_classes
 
-
     def get(self, index):
         if self.data_config.use_preprocessed:
             get_data = lambda name: np.load(os.path.join(self.data_config.preprocessed_folder, name, f"{index:06}.npy"))
@@ -36,67 +35,64 @@ class YoloMixin():
             gt_bboxes = data['gt_bboxes']
             return rgb_rescaled, gt_bboxes
 
-    
     def get_dict(self, index):
-            rgb = self.get_rgb(index)
+        rgb = self.get_rgb(index)
 
-            if self.if_augment:
-                rgb = augment_rgb(rgb.astype(np.float32)/255.) * 255
+        if self.if_augment:
+            rgb = augment_rgb(rgb.astype(np.float32) / 255.) * 255
 
-            try:
-                mask = self.get_mask(index)
-                if self.data_config.augment_per_image>1:
-                    rgb, mask = rotate_datapoint(img_likes=[rgb, mask])
-                
-                # we use mask for bbox to get exact bbox for all rotations
-                bboxes = []
-                if self.cls_type == 'all':
-                    for cls, gt_mask_value in self.data_config.mask_ids.items():
-                        bbox = get_bbox_from_mask(mask, gt_mask_value)
-                        if bbox is None:
-                            continue
-                        bbox = list(bbox)
-                        bbox.append(self.data_config.obj_dict[cls])
-                        bboxes.append(bbox)
-                else:
-                    bbox = get_bbox_from_mask(mask, gt_mask_value=255)
-                    if bbox is not None:
-                        bbox = list(bbox)
-                        bbox.append(0)
-                        bboxes.append(bbox)
+        try:
+            mask = self.get_mask(index)
+            if self.data_config.augment_per_image > 1:
+                rgb, mask = rotate_datapoint(img_likes=[rgb, mask])
 
-            except NoMaskError:
-                bboxes = self.get_gt_bbox(index)
+            # we use mask for bbox to get exact bbox for all rotations
+            bboxes = []
+            if self.cls_type == 'all':
+                for cls, gt_mask_value in self.data_config.mask_ids.items():
+                    bbox = get_bbox_from_mask(mask, gt_mask_value)
+                    if bbox is None:
+                        continue
+                    bbox = list(bbox)
+                    bbox.append(self.data_config.obj_dict[cls])
+                    bboxes.append(bbox)
+            else:
+                bbox = get_bbox_from_mask(mask, gt_mask_value=255)
+                if bbox is not None:
+                    bbox = list(bbox)
+                    bbox.append(0)
+                    bboxes.append(bbox)
 
+        except NoMaskError:
+            bboxes = self.get_gt_bbox(index)
 
-            # filter too small bboxes
-            bboxes = [bbox for bbox in bboxes if validate_bbox(bbox)]
-            bboxes = np.array(bboxes)
+        # filter too small bboxes
+        bboxes = [bbox for bbox in bboxes if validate_bbox(bbox)]
+        bboxes = np.array(bboxes)
 
-            if self.if_augment:
-                if len(bboxes)>0:
-                    rgb, bboxes = random_crop(rgb, bboxes)
+        if self.if_augment:
+            if len(bboxes) > 0:
+                rgb, bboxes = random_crop(rgb, bboxes)
 
-            yolo_default_rgb_h = self.data_config.yolo_default_rgb_h
-            yolo_default_rgb_w = self.data_config.yolo_default_rgb_w
+        yolo_default_rgb_h = self.data_config.yolo_default_rgb_h
+        yolo_default_rgb_w = self.data_config.yolo_default_rgb_w
 
-            rgb_rescaled, gt_bboxes \
-                = rescale_image_bbox(image=rgb, target_size=[yolo_default_rgb_h, yolo_default_rgb_w], gt_boxes=bboxes)
+        rgb_rescaled, gt_bboxes \
+            = rescale_image_bbox(image=rgb, target_size=[yolo_default_rgb_h, yolo_default_rgb_w], gt_boxes=bboxes)
 
-            #label_sbbox, label_mbbox, label_lbbox, sbboxes, mbboxes, lbboxes = self.preprocess_true_boxes(gt_bboxes)
+        # label_sbbox, label_mbbox, label_lbbox, sbboxes, mbboxes, lbboxes = self.preprocess_true_boxes(gt_bboxes)
 
-            data = {}
-            data['yolo_rgb_input'] = rgb_rescaled.astype(np.uint8)
-            #data['label_sbbox'] = label_sbbox.astype(np.float32)
-            #data['label_mbbox'] = label_mbbox.astype(np.float32)
-            #data['label_lbbox'] = label_lbbox.astype(np.float32)
-            #data['sbboxes'] = sbboxes.astype(np.float32)
-            #data['mbboxes'] = mbboxes.astype(np.float32)
-            #data['lbboxes'] = lbboxes.astype(np.float32)
-            data['gt_bboxes'] = gt_bboxes.astype(np.float32)
-            
-            return data
+        data = {}
+        data['yolo_rgb_input'] = rgb_rescaled.astype(np.uint8)
+        # data['label_sbbox'] = label_sbbox.astype(np.float32)
+        # data['label_mbbox'] = label_mbbox.astype(np.float32)
+        # data['label_lbbox'] = label_lbbox.astype(np.float32)
+        # data['sbboxes'] = sbboxes.astype(np.float32)
+        # data['mbboxes'] = mbboxes.astype(np.float32)
+        # data['lbboxes'] = lbboxes.astype(np.float32)
+        data['gt_bboxes'] = gt_bboxes.astype(np.float32)
 
+        return data
 
     def preprocess_true_boxes(self, bboxes):
         label = [np.zeros((self.train_output_h[i], self.train_output_w[i], self.anchor_per_scale,
@@ -169,4 +165,3 @@ class YoloMixin():
         sbboxes, mbboxes, lbboxes = bboxes_xywh
 
         return label_sbbox, label_mbbox, label_lbbox, sbboxes, mbboxes, lbboxes
-

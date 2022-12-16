@@ -50,8 +50,8 @@ if __name__ == '__main__':
 
     if params.trainer_params.distribute_training:
         os.environ['CUDA_VISIBLE_DEVICES'] = ",".join([str(x) for x in params.trainer_params.distribute_train_device])
-    # else:
-    #    os.environ['CUDA_VISIBLE_DEVICES'] = str(params.trainer_params.distribute_train_device[0])
+    else:
+       os.environ['CUDA_VISIBLE_DEVICES'] = str(params.trainer_params.distribute_train_device[0])
 
     import tensorflow as tf
 

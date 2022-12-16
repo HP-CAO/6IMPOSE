@@ -116,7 +116,7 @@ class Dataset():
                     meta = json.load(F)
                 index_lst = range(0, meta['n_datapoints'])
             elif self.mode == 'val':
-                n_datapoints = len(os.listdir(os.path.join(self.data_config.preprocessed_folder, 'rgb')))
+                n_datapoints = len(os.listdir(os.path.join(self.data_config.preprocessed_folder, 'numpy', 'rgb')))
                 index_lst = range(0, n_datapoints)
             elif self.mode == 'preprocess':
                 raise AssertionError('Reading a preprocessed dataset to preprocess a dataset does not make sense.')
