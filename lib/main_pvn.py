@@ -308,7 +308,6 @@ class MainPvn3d(Network):
                 img_pre_offset = vis_offset_value(sampled_index, pre_segs, kp_pre_ofst.numpy(),
                                                   cp_pre_ofst.numpy(), pts_2d_gt, pts_2d_pre, rgb.shape)
 
-
                 try:
                     feature_map_image = self.get_feature_maps_image(input_data)
                 except:

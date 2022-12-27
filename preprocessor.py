@@ -316,11 +316,11 @@ if __name__ == '__main__':
 
     num_workers = int(args.num_workers)  # get distributed over gpus
 
-    max_n_workers_per_gpu = 25
+    max_n_workers_per_gpu = 20 # max can be 25
 
     n_gpus = len(gpus)
     num_workers = np.clip(num_workers, 0, max_n_workers_per_gpu * n_gpus)  # limit max amount of workers/gpu
-    num_workers = np.clip(num_workers, 0, 64)  # dont exceed 64 workers
+    num_workers = np.clip(num_workers, 0, 70)  # dont exceed 64 workers
     gpu_inds = np.floor(np.linspace(0, n_gpus - 0.0001, num_workers)).astype(
         int)  # maps 0 - 4.9999 to 0-4 equally distributed (5 times)
 

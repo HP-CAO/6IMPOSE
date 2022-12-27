@@ -6,6 +6,7 @@ import tensorflow as tf
 import pickle
 import yaml
 import math
+from plyfile import PlyData
 
 
 def get_unity_depth_value(img_dpt, clip_range=(1.0, 2.5)):
@@ -39,23 +40,37 @@ def get_pointxyz_unity(cls_type_id):
     pointxyz = np.delete(pointxyz, dellist, axis=0)
     return pointxyz
 
+#  todo this is not decoding ox16...
+# def ply_vtx(pth):
+#     """read ply mesh file"""
+#     f = open(pth)
+#     assert f.readline().strip() == "ply"
+#     while True:
+#         line = f.readline().strip()
+#         if line.startswith("element vertex"):
+#             N = int(line.split()[-1])
+#             break
+#     while f.readline().strip() != "end_header":
+#         continue
+#     pts = []
+#     for _ in range(N):
+#         pts.append(np.float32(f.readline().split()[:3]))
+#
+#     print(np.array(pts)[:5])
+#
+#     return np.array(pts)
 
-def ply_vtx(pth):
-    """read ply mesh file"""
-    f = open(pth)
-    assert f.readline().strip() == "ply"
-    while True:
-        line = f.readline().strip()
-        if line.startswith("element vertex"):
-            N = int(line.split()[-1])
-            break
-    while f.readline().strip() != "end_header":
-        continue
-    pts = []
-    for _ in range(N):
-        pts.append(np.float32(f.readline().split()[:3]))
 
-    return np.array(pts)
+def ply_vtx(ply_pth):
+    print("loading p3ds from ply:", ply_pth)
+    ply = PlyData.read(ply_pth)
+    data = ply.elements[0].data
+    x = data['x']
+    y = data['y']
+    z = data['z']
+    p3ds = np.stack([x, y, z], axis=-1)
+    print("finish loading ply.")
+    return p3ds
 
 
 @tf.function
