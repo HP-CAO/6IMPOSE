@@ -1,0 +1,5 @@
+classes = 1
+train = config/yolo_config/train.txt
+valid = config/yolo_config/test.txt
+names = config/yolo_config/single_obj.names
+backup = models/yolo_weights

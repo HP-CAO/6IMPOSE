@@ -1,10 +1,5 @@
 #!/usr/bin/env sh
 
-#python preprocessor.py --config config/sim2real_darknet.json --mode train --format darknet --params dataset_params/cls_type cam
-#python preprocessor.py --config config/sim2real_darknet.json --mode val --format darknet --params dataset_params/cls_type cam
-
-
-
 python preprocessor.py --config config/sim2real_darknet_proc_1.json --mode train --format darknet --params dataset_params/cls_type holepuncher
 python preprocessor.py --config config/sim2real_darknet_proc_1.json --mode val --format darknet --params dataset_params/cls_type holepuncher
 python preprocessor.py --config config/sim2real_pvn3d_proc_1.json --mode train --format tfrecord --params dataset_params/cls_type holepuncher

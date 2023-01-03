@@ -131,7 +131,7 @@ arguments:
 
 ## General Notes
 - Either use `CUDA_VISIBLE_DEVICES=<gpus>` from the commandline or make sure the correct GPUS are set in the main scripts
-- Use NetworkFactory and DatasetFactory from pvn3d.factory to instanciate MainNetworks and 'Dataset's, tf.data.Datasets from generator or tfrecord according to params from config file -> refer to main.py file for usage
+- Use NetworkFactory and DatasetFactory from lib.factory to instantiate MainNetworks and 'Dataset's, tf.data.Datasets from generator or tfrecord according to params from config file -> refer to main.py file for usage
 
 - Use to experiment in command line 
 ```
