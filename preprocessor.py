@@ -316,7 +316,7 @@ if __name__ == '__main__':
 
     num_workers = int(args.num_workers)  # get distributed over gpus
 
-    max_n_workers_per_gpu = 20 # max can be 25
+    max_n_workers_per_gpu = 18 # max can be 25 # todo
 
     n_gpus = len(gpus)
     num_workers = np.clip(num_workers, 0, max_n_workers_per_gpu * n_gpus)  # limit max amount of workers/gpu

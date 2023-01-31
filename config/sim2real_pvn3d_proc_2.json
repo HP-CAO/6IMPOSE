@@ -11,13 +11,13 @@
         "img_downsample_factor": 1,
         "use_preprocessed": true,
         "use_pvn_kp": false,
-        "train_size": 29800,
-        "size_all": 30000,
+        "train_size": 19800,
+        "size_all": 20000,
         "augment_per_image": 16
     },
     "trainer_params": {
         "distribute_training": false,
-        "distribute_train_device": [3, 4, 5, 6, 7],
+        "distribute_train_device": [6, 7],
         "focal_loss_gamma": 2,
         "focal_loss_alpha": null,
         "reduce_loss_mean": true,

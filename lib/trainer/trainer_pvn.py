@@ -27,7 +27,8 @@ class TrainerPvn3d(Trainer):
         self.params = params
         self.reduction = tf.keras.losses.Reduction.NONE if self.params.distribute_training else tf.keras.losses.Reduction.AUTO
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.params.learning_rate)
-        self.BinaryFocalLoss = BinaryFocalLoss(gamma=2, from_logits=self.params.seg_from_logits, reduction=self.reduction)
+        self.BinaryFocalLoss = BinaryFocalLoss(gamma=2, from_logits=self.params.seg_from_logits,
+                                               reduction=self.reduction)
         self.CategoricalCrossentropy = \
             tf.keras.losses.CategoricalCrossentropy(from_logits=self.params.seg_from_logits, reduction=self.reduction)
 
@@ -42,7 +43,7 @@ class TrainerPvn3d(Trainer):
         self.loss_cp_list = []
         self.loss_seg_list = []
 
-    def log(self, losses:Dict[str, float]):
+    def log(self, losses: Dict[str, float]):
         self.loss_list.append(losses['loss'])
         self.loss_kp_list.append(losses['loss_kp'])
         self.loss_cp_list.append(losses['loss_cp'])
@@ -51,12 +52,13 @@ class TrainerPvn3d(Trainer):
     def get_overall_loss(self) -> float:
         return np.array(self.loss_list).mean()
 
-    def get(self)->Dict[str, float]:
+    def get(self) -> Dict[str, float]:
         mean_loss = np.array(self.loss_list).mean()
         mean_loss_kp = np.array(self.loss_kp_list).mean()
         mean_loss_cp = np.array(self.loss_cp_list).mean()
         mean_loss_seg = np.array(self.loss_seg_list).mean()
-        return {'pvn_loss/loss':mean_loss, 'pvn_loss/loss_kp':mean_loss_kp, 'pvn_loss/loss_seg':mean_loss_seg, 'pvn_loss/loss_cp':mean_loss_cp}
+        return {'pvn_loss/loss': mean_loss, 'pvn_loss/loss_kp': mean_loss_kp, 'pvn_loss/loss_seg': mean_loss_seg,
+                'pvn_loss/loss_cp': mean_loss_cp}
 
     @tf.function
     def loss_fn_pvn3d(self, kp_pre_ofst, kp_targ_ofst, seg_pre, cp_pre_ofst, ctr_targ_ofst,
@@ -94,6 +96,16 @@ class TrainerPvn3d(Trainer):
         loss = loss_cp + loss_kp + loss_seg
 
         return loss, loss_kp, loss_seg, loss_cp
+
+    def geometry_constraint_loss(self, kpts_offset_prediction, cpts_offset_prediction, gt_cp_kp_vectors):
+        """
+        :param kpts_prediction: [n, n_pts, kpts, 3]
+        :params cpts_offset_predicstion: [n, n_pts, 1, 3]
+        :params gt_cp_cp_vectors: [n_kpts, 3]
+        """
+        predicted_vectors = kpts_offset_prediction - cpts_offset_prediction  # [n, n_pts, kpts, 3]
+        prediction_error = predicted_vectors - gt_cp_kp_vectors  # here we might need a cos similarity error function or different distance measurement
+
 
     def loss_pvn_ktps(self, kp_cp_ofst_pre, kp_cp_ofst_target, kp_cp_pre, kp_cp_target, seg_pre, label, mask_label):
         """
