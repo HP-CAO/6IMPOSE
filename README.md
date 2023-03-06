@@ -1,11 +1,11 @@
-# Sim2real 6D pose estimation using YOLO and PVN3D
+# 6IMPOSE: Bridging the Reality Gap in 6D Pose Estimation for Robotic Grasping
 ## Overview
-In this work, we develop a real-time two-stage 6D pose estimation approach by integrating the object detector YOLO-V4-tiny [[1]](#1) and the 6D pose estimation algorithm PVN3D [[2]](#2) for time sensitive robotics applications.
+We introduce 6IMPOSE, a novel framework for sim-to-real data generation and 6D pose estimation. 6IMPOSE consists of four modules: First, a [data generation pipeline](https://github.com/LukasDb/BlenderSyntheticData) that employs the 3D software suite Blender to create synthetic RGBD image datasets with 6D pose annotations. Second, an [annotated RGBD dataset](https://mediatum.ub.tum.de/1695465) of five household objects generated using the proposed pipeline. Third, a real-time two-stage [6D pose estimation approach](https://github.com/HP-CAO/6IMPOSE) that integrates the object detector YOLO-V4 and a streamlined, real-time version of the 6D pose estimation algorithm PVN3D optimized for time-sensitive robotics applications. Fourth, a [codebase](https://github.com/LukasDb/HumanRobotInteraction) designed to facilitate the integration of the vision system into a robotic grasping experiment.
 
 ![Alt text](diagram.jpg?raw=true "")
-
 *A two-stage pose estimation approach shows the object detection with YOLO-tiny to localize the object of interest at the first stage, followed by the 6D object pose estimation with PVN3D-tiny at the second stage.*
-## Setting up
+
+## Setting up for 6D pose estimation
 ### Basics: 
 This project is using the following settings:
 
@@ -16,52 +16,52 @@ This project is using the following settings:
 
 ### Compile Pointnet++ layers
 Download [Pointnet++ tensorflow 2.0 layers](https://github.com/dgriffiths3/pointnet2-tensorflow2)
-and save it under /pvn3d/lib/. Then compile the pointnet++ layers following the introduction. 
+and save it under /lib/net/. Then compile the pointnet++ layers following the introduction. 
 Some modifications needed:
 - Before compiling, ensure the CUDA_ROOT path in ```./tf_ops/compile_ops.sh``` is correct
-- After compiling, you maybe need to modify the path in ```./pnet2_layers/cpp_modules.py```
+- After compiling, you might need to modify the path in ```./pnet2_layers/cpp_modules.py```
 
 ### Datasets
-Create a link to dataset
-```
-$ cd sim2real6d
-$ ln -s /mnt/scratch1/dataset/ .
-```
+We generate synthetic data using 3D software suite Blender, the developed codebase can be found from the [link](https://github.com/LukasDb/BlenderSyntheticData).
+The dataset developed in this project can be found from the [link](https://mediatum.ub.tum.de/1695465).
+To reuse the developed dataset and code for data preprocessing and training, please organize the downloaded dataset as follows:
 
 Dataset structure:
 ```
-- dataset
-  - blender
-    - bl_obj_kpts
-    - bl_obj_mesh
-    - blender
-      - blender_linemod
-        - 01 
-          - depth 
-          - gt 
-          - mask
-          - rgb 
-          - preprocessd
-            - darknet
-            - tfrecord
-            - numpy 
-          gt.json
-          params.json
-         ...
-      ...      
-                 
-  - linemod
-    - lm_obj_kpts
-    - lm_obj_mesh
-    - linemod
-      - data 
-        - 01
-          - rgb
-          - mask
-          - depth
-          gt.yml
-        ...
-      ...                 
+6IMPOSE
+    - dataset
+      - blender
+        - bl_obj_kpts
+        - bl_obj_mesh
+        - blender
+          - blender_linemod
+            - 01 
+              - depth 
+              - gt 
+              - mask
+              - rgb 
+              - preprocessd
+                - darknet
+                - tfrecord
+                - numpy 
+              gt.json
+              params.json
+             ...
+          - cps
+            ...      
+                     
+      - linemod
+        - lm_obj_kpts
+        - lm_obj_mesh
+        - linemod
+          - data 
+            - 01
+              - rgb
+              - mask
+              - depth
+              gt.yml
+            ...
+          ...                 
 ```
 
 - *blender*: synthetically generated Dataset using Blender.
@@ -97,6 +97,9 @@ preprocessor.py [-h] [--config CONFIG] [--num_workers NUM_WORKERS]
                        [--params [PARAMS [PARAMS ...]]] [--mode MODE]
                        [--format FORMAT]
 arguments:
+  --config CONFIG      Path to the configuration files in .json
+  --num_workers        Number of processsors for processing dataset
+  --params             To overwrite config parameters from the commandline, use e.g. --params dataset_params/clstype duck 
   --mode MODE          [train|val|full] decide image split of dataset
   --format FORMAT      [tfrecord|numpy|darknet] decide save format (WIP for darknet ajust path
                         in script)
@@ -125,20 +128,31 @@ python preprocessor.py --config config/sim2real_pvn3d.json --mode  val --format 
 main.py [-h] [--generate_config] [--config CONFIG] [--id ID] [--force]
                [--weights WEIGHTS] [--params [PARAMS [PARAMS ...]]]
                [--mode MODE]
+
 arguments:
-  --mode:              [train] for now only training is supported
+  --generate_config    Generating a template for configuration with default settings.
+  --id                 ID for different run.
+  --force              Overwriting the existing saved log files with same ID.
+  --config CONFIG      Path to the configuration files in .json
+  --weights            Path to load the saved pre-trained models.
+  --params             To overwrite config parameters from the commandline, use e.g. --params dataset_params/clstype duck 
+  --mode MODE          [train|val|full] decide image split of dataset
+  --mode:              [train|val|test|export] choose different mode for training, testing or exporting the DNNs to tensorflow model.
 ```
 
 ## General Notes
 - Either use `CUDA_VISIBLE_DEVICES=<gpus>` from the commandline or make sure the correct GPUS are set in the main scripts
-- Use NetworkFactory and DatasetFactory from lib.factory to instantiate MainNetworks and 'Dataset's, tf.data.Datasets from generator or tfrecord according to params from config file -> refer to main.py file for usage
-
 - Use to experiment in command line 
 ```
 CUDA_VISIBLE_DEVICES=-1 python -i main.py --config <your_config> --mode test --params monitor_params/write_log false
 ```
 
+## Grasping experiments
+For the grasping experiments, we use a robotic manipulator Fanuc CRX 10iAL with a custom Python interface. As an endeffector, we use an OnRobot RG2 gripper. Attached to the endeffector is a Intel Realsense D415 which is used to obtain the RGBD images. This setup is then used to perform 50 grasp attempts per object in three different lighting conditions, which yields 750 grasps in total. The three different lighting conditions are diffused, low and spot lighting, to test the algorithm's robustness to different lighting levels,
+The codebase for performing the robotic gasping can be found from [link](https://github.com/LukasDb/HumanRobotInteraction)
+
 ## References
+
 <a id="1">[1]</a> 
 Bochkovskiy, Alexey, Chien-Yao Wang, and Hong-Yuan Mark Liao. "Yolov4: Optimal speed and accuracy of object detection." arXiv preprint arXiv:2004.10934 (2020).
 
