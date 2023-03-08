@@ -9,6 +9,15 @@ import math
 from plyfile import PlyData
 
 
+def get_diameter_from_mesh(mesh_points):
+    center = np.mean(mesh_points, axis=0)
+    distance = np.linalg.norm(mesh_points - center, axis=1)
+    farthest_index = np.argmax(distance)
+    radius = distance[farthest_index]
+    diameter = radius * 2
+    return diameter
+
+
 def get_unity_depth_value(img_dpt, clip_range=(1.0, 2.5)):
     clip_range_l, clip_range_u = clip_range
     dpt_map = (img_dpt[:, :, 0] / 255) * (clip_range_u - clip_range_l) + clip_range_l

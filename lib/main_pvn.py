@@ -16,7 +16,7 @@ from lib.monitor.monitor import MonitorParams
 from lib.data.linemod.linemod_settings import LineModSettings
 from lib.network import Network
 from lib.params import NetworkParams, Networks
-from lib.data.utils import expand_dim, get_mesh_diameter, load_mesh
+from lib.data.utils import expand_dim, get_mesh_diameter, load_mesh, get_diameter_from_mesh
 from lib.monitor.evaluator import EvalResult, EvalResultType, cal_accuracy, cal_add_dis, cal_adds_dis, cal_auc
 from lib.utils import ensure_fd
 from tensorflow.keras.layers import MaxPool2D
@@ -212,18 +212,14 @@ class MainPvn3d(Network):
 
         mesh_path = data_config.mesh_paths[self.cls_type]
         mesh_points = load_mesh(mesh_path, scale=data_config.mesh_scale, n_points=500)
-
         obj_id = data_config.obj_dict[data_config.cls_type]
-        if dataset_params.dataset == "linemod" or dataset_params.data_name.endswith("linemod"):
+
+        if dataset_params.data_name == "linemod" or dataset_params.data_name.endswith("linemod"):
+            # here we use the computed diameter from https://github.com/j96w/DenseFusion
             mesh_info_path = os.path.join(data_config.mesh_dir, "model_info.yml")
             mesh_diameter = get_mesh_diameter(mesh_info_path, obj_id) * data_config.mesh_scale  # from mm to m
-        elif dataset_params.dataset == "blender":
-            mesh_diameter = 0.1  # todo generate mesh_info for blender mesh. by default 0.1 * kd ~ 1cm
-        elif dataset_params.dataset == "unity":
-            mesh_diameter = 0.1  # todo generate mesh_info for unity mesh. by default 0.1 * kd ~ 1cm
-            mesh_points[:, 0] *= 1
         else:
-            raise AssertionError('unknown dataset for performance_eval!')
+            mesh_diameter = get_diameter_from_mesh(mesh_points)
 
         kpts_path = os.path.join(data_config.kps_dir, "{}/farthest.txt".format(data_config.cls_type))
         corner_path = os.path.join(data_config.kps_dir, "{}/corners.txt".format(data_config.cls_type))
