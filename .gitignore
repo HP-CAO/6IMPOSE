@@ -32,4 +32,5 @@ output.json
 *.avi
 *.weights
 dataset/**
-!diagram.jpg
+!diagram.jpg\
+!demo_data/*.png
