@@ -33,4 +33,4 @@ output.json
 *.weights
 dataset/**
 !diagram.jpg\
-!demo_data/*.png
+demo_data/

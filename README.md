@@ -1,6 +1,6 @@
 # 6IMPOSE: Bridging the Reality Gap in 6D Pose Estimation for Robotic Grasping
 ## Overview
-We introduce 6IMPOSE, a novel framework for sim-to-real data generation and 6D pose estimation. 6IMPOSE consists of four modules: First, a [data generation pipeline](https://github.com/LukasDb/BlenderSyntheticData) that employs the 3D software suite Blender to create synthetic RGBD image datasets with 6D pose annotations. Second, an [annotated RGBD dataset](https://mediatum.ub.tum.de/1695465) of five household objects generated using the proposed pipeline. Third, a real-time two-stage [6D pose estimation approach](https://github.com/HP-CAO/6IMPOSE) that integrates the object detector YOLO-V4 and a streamlined, real-time version of the 6D pose estimation algorithm PVN3D optimized for time-sensitive robotics applications. Fourth, a [codebase](https://github.com/LukasDb/HumanRobotInteraction) designed to facilitate the integration of the vision system into a robotic grasping experiment.
+We introduce 6IMPOSE, a novel framework for sim-to-real data generation and 6D pose estimation. 6IMPOSE consists of four modules: First, a [data generation pipeline](https://github.com/LukasDb/BlenderSyntheticData) that employs the 3D software suite Blender to create synthetic RGBD image datasets with 6D pose annotations. Second, an [annotated RGBD dataset](https://mediatum.ub.tum.de/1695465) of five household objects generated using the proposed pipeline. Third, a real-time two-stage [6D pose estimation approach](https://github.com/HP-CAO/6IMPOSE) that integrates the object detector YOLO-V4 and a streamlined, real-time version of the 6D pose estimation algorithm PVN3D optimized for time-sensitive robotics applications. Fourth, a [codebase](https://github.com/LukasDb/6IMPOSE_Grasping) designed to facilitate the integration of the vision system into a robotic grasping experiment.
 
 ![Alt text](diagram.jpg?raw=true "")
 *A two-stage pose estimation approach shows the object detection with YOLO-tiny to localize the object of interest at the first stage, followed by the 6D object pose estimation with PVN3D-tiny at the second stage.*
@@ -10,7 +10,7 @@ We introduce 6IMPOSE, a novel framework for sim-to-real data generation and 6D p
 This project is using the following settings:
 
 - Ubuntu: 20.04
-- CUDA: 11.0
+- CUDA: 11.0 with cudnn 8.5
 - Tensorflow: 2.6.2
 - python: >3.6.5 (Recommend using conda python>=3.6.2)
 
@@ -20,6 +20,25 @@ and save it under /lib/net/. Then compile the pointnet++ layers following the in
 Some modifications needed:
 - Before compiling, ensure the CUDA_ROOT path in ```./tf_ops/compile_ops.sh``` is correct
 - After compiling, you might need to modify the path in ```./pnet2_layers/cpp_modules.py```
+
+### Compile Darknet layers
+We take [Darknet](https://github.com/AlexeyAB/darknet) as a submodule of this repo. To use darknet for inference, you need to compile darknet as introduced [here](https://github.com/AlexeyAB/darknet#how-to-compile-on-linux-using-make).
+Before compile, check if the Makefile is properly configured as 
+
+```
+GPU=1
+CUDNN=1
+CUDNN_HALF=1
+OPENCV=1
+AVX=0
+OPENMP=0
+LIBSO=1
+ZED_CAMERA=0
+ZED_CAMERA_v2_8=0
+```
+
+then just do make in the darknet directory 
+```make```
 
 ### Datasets
 We generate synthetic data using 3D software suite Blender, the developed codebase can be found from the [link](https://github.com/LukasDb/BlenderSyntheticData).
@@ -140,6 +159,16 @@ arguments:
   --mode:              [train|val|test|export] choose different mode for training, testing or exporting the DNNs to tensorflow model.
 ```
 
+## Demo
+### Usage
+
+Download example test data and pretrained models from [here](https://drive.google.com/drive/folders/1j2NlhgAtyLUVCceH2XD0YFZHwH1DLNtj?usp=sharing). Put the folder "demo_data" under the root directory. 
+Run
+```
+python demo.py 
+```
+If everything is fine, the test result will be saved to the demo_data folder. You can also download different pretrained models and images from the [annotated RGBD dataset](https://mediatum.ub.tum.de/1695465) to test different objects.
+
 ## General Notes
 - Either use `CUDA_VISIBLE_DEVICES=<gpus>` from the commandline or make sure the correct GPUS are set in the main scripts
 - Use to experiment in command line 
@@ -148,7 +177,7 @@ CUDA_VISIBLE_DEVICES=-1 python -i main.py --config <your_config> --mode test --p
 ```
 
 ## Grasping experiments
-For the grasping experiments, we use a robotic manipulator Fanuc CRX 10iAL with a custom Python interface. As an endeffector, we use an OnRobot RG2 gripper. Attached to the endeffector is a Intel Realsense D415 which is used to obtain the RGBD images. This setup is then used to perform 50 grasp attempts per object in three different lighting conditions, which yields 750 grasps in total. The three different lighting conditions are diffused, low and spot lighting, to test the algorithm's robustness to different lighting levels,
+For the grasping experiments, we use a robotic manipulator Fanuc CRX 10iAL with a custom Python interface. As an endeffector, we use an OnRobot RG2 gripper. Attached to the end-effector is a Intel Realsense D415 which is used to obtain the RGBD images. This setup is then used to perform 50 grasp attempts per object in three different lighting conditions, which yields 750 grasps in total. The three different lighting conditions are diffused, low and spot lighting, to test the algorithm's robustness to different lighting levels,
 The codebase for performing the robotic gasping can be found from [link](https://github.com/LukasDb/HumanRobotInteraction)
 
 ## References
