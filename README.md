@@ -10,7 +10,7 @@ We introduce 6IMPOSE, a novel framework for sim-to-real data generation and 6D p
 This project is using the following settings:
 
 - Ubuntu: 20.04
-- CUDA: 11.0 with cudnn 8.5
+- CUDA: 11.2 with cudnn 8.5
 - Tensorflow: 2.6.2
 - python: >3.6.5 (Recommend using conda python>=3.6.2)
 
