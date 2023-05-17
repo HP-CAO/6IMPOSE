@@ -59,7 +59,7 @@ def performance_eval_linemod(p):
     resnet_w_h = 80
     resnet_input_size = [resnet_w_h, resnet_w_h]
     bbox_default = [320., 120., 400., 200.]  # hacking 80x80, this part will be done using yolo in the robot
-    # experiements
+    # experiments
 
     """=========== Set up PVN3D  ==========="""
     rescale_factor = 0.001
@@ -112,6 +112,7 @@ def performance_eval_linemod(p):
         pred_bboxes.extend([bbox2det(box) for box in [bbox]])
     else:
         bbox = bbox_default
+
 
     """=========== PVN3D Input preparation ==========="""
     crop_index, crop_factor = get_crop_index(bbox, base_crop_resolution=resnet_input_size)

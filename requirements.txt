@@ -1,11 +1,10 @@
-tensorflow~=2.9.1
+tensorflow==2.6.2
 tensorflow_addons
 focal_loss
 segmentation_models
 PyYAML
 numpy
 scikit-learn
-PyYAML
 tqdm
 matplotlib
 scipy
