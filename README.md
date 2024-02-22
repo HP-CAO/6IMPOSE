@@ -162,7 +162,7 @@ arguments:
 ## Demo
 ### Usage
 
-Download example test data and pretrained models from [here](https://drive.google.com/drive/folders/1j2NlhgAtyLUVCceH2XD0YFZHwH1DLNtj?usp=sharing). Put the folder "demo_data" under the root directory. 
+Download example test data and pretrained models from [here](https://drive.google.com/drive/folders/1fdSzP4jRk2E5Q9FhA2hBWMn5tIon81hI?usp=sharing). Put the folder "demo_data" under the root directory. 
 Run
 ```
 python demo.py 
