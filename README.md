@@ -5,7 +5,22 @@ We introduce 6IMPOSE, a novel framework for sim-to-real data generation and 6D p
 ![Alt text](diagram.jpg?raw=true "")
 *A two-stage pose estimation approach shows the object detection with YOLO-tiny to localize the object of interest at the first stage, followed by the 6D object pose estimation with PVN3D-tiny at the second stage.*
 
+If you use this work please cite
+```
+@ARTICLE{cao2023,
+AUTHOR={Cao, Hongpeng and Dirnberger, Lukas and Bernardini, Daniele and Piazza, Cristina and Caccamo, Marco},   
+TITLE={6IMPOSE: bridging the reality gap in 6D pose estimation for robotic grasping},      
+JOURNAL={Frontiers in Robotics and AI},      
+VOLUME={10},           
+YEAR={2023},      
+URL={https://www.frontiersin.org/articles/10.3389/frobt.2023.1176492},       
+DOI={10.3389/frobt.2023.1176492},      
+ISSN={2296-9144}
+}
+```
 ## Setting up for 6D pose estimation
+We now also provide an easy to use Docker container to run the 2-stage 6D pose estimation pipeline. It only works for the objects of the paper, but could relatively easy extended to other objects. The Docker container is available in from [6IMPOSE_legacy](https://github.com/LukasDb/6IMPOSE_legacy).
+
 ### Basics: 
 This project is using the following settings:
 
